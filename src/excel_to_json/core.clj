@@ -1,7 +1,43 @@
 (ns excel-to-json.core
   (:gen-class)
   (:require [cheshire.core :refer [generate-string]]
-            [incanter.excel :refer [read-xls]]))
+            [incanter.excel :refer [read-xls]]
+            [clojure-watch.core :refer [start-watch]]))
+
+;; watching/ANSI printing taken from https://github.com/ibdknox/cljs-watch/
+
+(def pk :id)
+
+(def ANSI-CODES
+  {:reset "[0m"
+   :default "[39m"
+   :white "[37m"
+   :black "[30m"
+   :red "[31m"
+   :green "[32m"
+   :blue "[34m"
+   :yellow "[33m"
+   :magenta "[35m"
+   :cyan "[36m"})
+
+(defn ansi
+  [code]
+  (str \u001b (get ANSI-CODES code (:reset ANSI-CODES))))
+
+(defn style
+  [s & codes]
+  (str (apply str (map ansi codes)) s (ansi :reset)))
+
+(defn watcher-print
+  [& text]
+  (print (style (str "watcher :: ") :magenta))
+  (apply print text)
+  (flush))
+
+(defn status-print
+  [text]
+  (print "    " (style text :green) "\n")
+  (flush))
 
 (defn split-keys
   [k]
@@ -58,25 +94,43 @@
   [file]
   (first (clojure.string/split (.getName file) #"\.")))
 
-(defn run
+(defn convert-and-save
+  [file]
+  (let [file-path (.getPath file)
+        output-file (str (.getParent file) "/" (get-filename file) ".json")]
+    (watcher-print "Converted" file-path "->" output-file "\n")
+    (let [document (read-xls file-path :header-keywords true :all-sheets? true)
+          config (parse-document document pk)]
+      (spit output-file (generate-string config {:pretty true})))))
+
+(defn watch-callback
+  [event filename]
+  (let [file (clojure.java.io/file filename)]
+    (when (is-xlsx? file)
+      (watcher-print "Updating changed file...\n")
+      (convert-and-save file)
+      (status-print "[done]"))))
+
+(defn start
   [source-dir]
+  (watcher-print "Converting files in" source-dir "\n")
   (let [directory (clojure.java.io/file source-dir)
-        files (file-seq directory)
         xlsx-files (reduce (fn [acc f]
                              (if (and (.isFile f)
                                       (is-xlsx? f))
                                (conj acc f)
-                               acc)) [] files)]
+                               acc)) [] (file-seq directory))]
     (doseq [file xlsx-files]
-      (let [file-path (.getPath file)
-            output-file (str (.getParent file) "/" (get-filename file) ".json")
-            document (read-xls file-path :header-keywords true :all-sheets? true)
-            config (parse-document document :id)]
-        (println "converted" file-path "->" output-file)
-        (spit output-file (generate-string config {:pretty true}))))))
+      (convert-and-save file))
+    (status-print "[done]")
+    (start-watch [{:path source-dir
+                   :event-types [:create :modify]
+                   :bootstrap (fn [path] (watcher-print "Starting to watch" path "\n"))
+                   :callback watch-callback
+                   :options {:recursive false}}])))
 
 (defn -main
   [& args]
   (if (seq args)
-    (run (first args))
-    (println "path to Excel files is required")))
+    (start (first args))
+    (watcher-print "Source directory path is required\n")))
