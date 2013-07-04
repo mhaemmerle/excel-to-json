@@ -94,7 +94,7 @@
 
 (defn is-xlsx?
   [file]
-  (re-matches #".*\.xlsx" (.getName file)))
+  (re-matches #"^((?!~\$).)*.xlsx$" (.getName file)))
 
 (defn get-filename
   [file]
