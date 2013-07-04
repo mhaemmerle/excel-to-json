@@ -2,72 +2,62 @@
   (:gen-class)
   (:require [cheshire.core :refer [generate-string]]
             [incanter.excel :refer [read-xls]]
-            [clojure-watch.core :refer [start-watch]]))
+            [clojure-watch.core :refer [start-watch]]
+            [clansi.core :refer [style]]))
 
 ;; watching/ANSI printing taken from https://github.com/ibdknox/cljs-watch/
 
 (def pk :id)
 
-(def ANSI-CODES
-  {:reset "[0m"
-   :default "[39m"
-   :white "[37m"
-   :black "[30m"
-   :red "[31m"
-   :green "[32m"
-   :blue "[34m"
-   :yellow "[33m"
-   :magenta "[35m"
-   :cyan "[36m"})
-
-(defn ansi
-  [code]
-  (str \u001b (get ANSI-CODES code (:reset ANSI-CODES))))
-
-(defn style
-  [s & codes]
-  (str (apply str (map ansi codes)) s (ansi :reset)))
+(defn text-timestamp
+  []
+  (let [c (java.util.Calendar/getInstance)
+        f (java.text.SimpleDateFormat. "HH:mm:ss")]
+    (.format f (.getTime c))))
 
 (defn watcher-print
   [& text]
-  (print (style (str "watcher :: ") :magenta))
-  (apply print text)
-  (flush))
+  (apply println (style (str (text-timestamp) " :: watcher :: ") :magenta) text))
 
 (defn error-print
   [& text]
-  (print (style (str "error :: ") :red))
-  (apply print text)
-  (flush))
+  (apply println (style "error :: " :red) text))
 
 (defn status-print
   [text]
-  (print "    " (style text :green) "\n")
-  (flush))
+  (println "    " (style text :green)))
 
 (defn split-keys
   [k]
   (map keyword (clojure.string/split (name k) #"\.")))
+
+(defn safe-keyword
+  [k]
+  (keyword (str (if (instance? Number k) (long k) k))))
+
+
+(defn safe-value
+  [v]
+  (let [r (if (instance? String v)
+            (read-string v)
+            v)]
+    (if (and (number? r)
+             (= 0.0 (mod r 1)))
+      (long r)
+      r)))
 
 (defn unpack-keys
   [m]
   (reduce (fn [acc [k v]]
             (if (nil? v)
               acc
-              (let [safe-value (if (instance? String v)
-                                 (read-string v)
-                                 v)]
-                (assoc-in acc (split-keys k) safe-value)))) {} m))
+              (assoc-in acc (split-keys k) (safe-value v)))) {} m))
 
 (defn column-names-and-rows
   [sheet]
   (let [[_ column-names] (first sheet)
         [_ rows] (first (rest sheet))]
     [column-names rows]))
-
-(defn safe-keyword
-  [kw]
-  (keyword (str (if (instance? Number kw) (long kw) kw))))
 
 (defn add-sheet-config
   [primary-key current-key sheets config]
@@ -80,6 +70,7 @@
       (reduce (fn [acc row]
                 (let [nested-key (safe-keyword (get row secondary-key))]
                   (assoc-in acc [current-key secondary-key nested-key]
+                            ;; TODO check if value is empty
                             (unpack-keys (dissoc row primary-key secondary-key)))))
               config secondary-config))))
 
@@ -108,7 +99,7 @@
     (try
       (let [config (flatten (parse-document document pk))]
         (spit output-file (generate-string config {:pretty true}))
-        (watcher-print "Converted" file-path "->" output-file "\n"))
+        (watcher-print "Converted" file-path "->" output-file))
       (catch Exception e
         (error-print "Conversion failed with: " e "\n")))))
 
@@ -116,17 +107,16 @@
   [event filename]
   (let [file (clojure.java.io/file filename)]
     (when (is-xlsx? file)
-      (watcher-print "Updating changed file...\n")
+      (watcher-print "Updating changed file...")
       (convert-and-save file)
       (status-print "[done]"))))
 
 (defn start
   [source-dir]
-  (watcher-print "Converting files in" source-dir "\n")
+  (watcher-print "Converting files in" source-dir)
   (let [directory (clojure.java.io/file source-dir)
         xlsx-files (reduce (fn [acc f]
-                             (if (and (.isFile f)
-                                      (is-xlsx? f))
+                             (if (and (.isFile f) (is-xlsx? f))
                                (conj acc f)
                                acc)) [] (file-seq directory))]
     (doseq [file xlsx-files]
@@ -134,7 +124,7 @@
     (status-print "[done]")
     (start-watch [{:path source-dir
                    :event-types [:create :modify]
-                   :bootstrap (fn [path] (watcher-print "Starting to watch" path "\n"))
+                   :bootstrap (fn [path] (watcher-print "Starting to watch" path))
                    :callback watch-callback
                    :options {:recursive false}}])))
 
