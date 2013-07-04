@@ -98,10 +98,10 @@
   [file]
   (let [file-path (.getPath file)
         output-file (str (.getParent file) "/" (get-filename file) ".json")]
-    (watcher-print "Converted" file-path "->" output-file "\n")
     (let [document (read-xls file-path :header-keywords true :all-sheets? true)
-          config (parse-document document pk)]
-      (spit output-file (generate-string config {:pretty true})))))
+          config (flatten (parse-document document pk))]
+      (spit output-file (generate-string config {:pretty true})))
+    (watcher-print "Converted" file-path "->" output-file "\n")))
 
 (defn watch-callback
   [event filename]
