@@ -34,6 +34,12 @@
   (apply print text)
   (flush))
 
+(defn error-print
+  [& text]
+  (print (style (str "error :: ") :red))
+  (apply print text)
+  (flush))
+
 (defn status-print
   [text]
   (print "    " (style text :green) "\n")
@@ -97,11 +103,14 @@
 (defn convert-and-save
   [file]
   (let [file-path (.getPath file)
-        output-file (str (.getParent file) "/" (get-filename file) ".json")]
-    (let [document (read-xls file-path :header-keywords true :all-sheets? true)
-          config (flatten (parse-document document pk))]
-      (spit output-file (generate-string config {:pretty true})))
-    (watcher-print "Converted" file-path "->" output-file "\n")))
+        output-file (str (.getParent file) "/" (get-filename file) ".json")
+        document (read-xls file-path :header-keywords true :all-sheets? true)]
+    (try
+      (let [config (flatten (parse-document document pk))]
+        (spit output-file (generate-string config {:pretty true}))
+        (watcher-print "Converted" file-path "->" output-file "\n"))
+      (catch Exception e
+        (error-print "Conversion failed with: " e "\n")))))
 
 (defn watch-callback
   [event filename]
