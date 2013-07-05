@@ -35,21 +35,19 @@
   [k]
   (keyword (str (if (instance? Number k) (long k) k))))
 
-
 (defn safe-value
   [v]
   (let [r (if (instance? String v)
             (read-string v)
             v)]
-    (if (and (number? r)
-             (= 0.0 (mod r 1)))
+    (if (and (number? r) (= 0.0 (mod r 1)))
       (long r)
       r)))
 
 (defn unpack-keys
   [m]
   (reduce (fn [acc [k v]]
-            (if (nil? v)
+            (if (or (nil? v) (empty? v))
               acc
               (assoc-in acc (split-keys k) (safe-value v)))) {} m))
 
@@ -68,10 +66,11 @@
       ;; TODO remove either primary or current key
       ;; (println primary-key current-key secondary-key)
       (reduce (fn [acc row]
-                (let [nested-key (safe-keyword (get row secondary-key))]
-                  (assoc-in acc [current-key secondary-key nested-key]
-                            ;; TODO check if value is empty
-                            (unpack-keys (dissoc row primary-key secondary-key)))))
+                (let [nested-key (safe-keyword (get row secondary-key))
+                      sub (unpack-keys (dissoc row primary-key secondary-key))]
+                  (if (empty? sub)
+                    acc
+                    (assoc-in acc [current-key secondary-key nested-key] sub))))
               config secondary-config))))
 
 (defn parse-document
