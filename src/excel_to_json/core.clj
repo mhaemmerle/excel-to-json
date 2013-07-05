@@ -47,7 +47,7 @@
 (defn unpack-keys
   [m]
   (reduce (fn [acc [k v]]
-            (if (or (nil? v) (empty? v))
+            (if (or (nil? v) (and (coll? v) (empty? v)))
               acc
               (assoc-in acc (split-keys k) (safe-value v)))) {} m))
 
