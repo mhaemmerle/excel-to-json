@@ -70,7 +70,7 @@
                       sub (unpack-keys (dissoc row primary-key secondary-key))]
                   (if (empty? sub)
                     acc
-                    (assoc-in acc [current-key secondary-key nested-key] sub))))
+                    (assoc-in acc [secondary-key nested-key] sub))))
               config secondary-config))))
 
 (defn parse-document
