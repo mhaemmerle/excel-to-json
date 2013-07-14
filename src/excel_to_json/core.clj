@@ -5,7 +5,7 @@
             [clojure-watch.core :refer [start-watch]]
             [clansi.core :refer [style]]))
 
-;; watching/ANSI printing taken from https://github.com/ibdknox/cljs-watch/
+;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
 (def pk :id)
 
