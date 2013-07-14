@@ -17,6 +17,16 @@ Worksheet 2
 | bar           | 1             | d             | 6             | 44              |
 | bar           | 2             | e             | 5             | 55              |
 
+Worksheet 3
+
+| id            | properties    | property_d    | property_e    |
+| ------------- | ------------- | ------------- | ------------- |
+| foo           |               | 66            | 100           |
+| foo           |               | 77            | 200           |
+| foo           |               | 88            | 300           |
+| bar           |               | 99            | 400           |
+| bar           |               | 111           | 500           |
+
 Will end up as this:
 
 ```json
@@ -47,7 +57,21 @@ Will end up as this:
                     "qux": 33
                 }
             }
-        }
+        },
+        "properties": [
+            {
+                "property_d": 66,
+                "property_e": 100
+            },
+            {
+                "property_d": 77,
+                "property_e": 200
+            },
+            {
+                "property_d": 88,
+                "property_e": 300
+            }
+        ]
     },
     {
         "id": "bar",
@@ -68,7 +92,17 @@ Will end up as this:
                     "qux": 55
                 }
             }
-        }
+        },
+        "properties": [
+            {
+                "property_d": 99,
+                "property_e": 400
+            },
+            {
+                "property_d": 111,
+                "property_e": 500
+            }
+        ]
     }
 ]
 ```
