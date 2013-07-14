@@ -1,4 +1,7 @@
-Opinionated Excel -> JSON converter, where nested structures can be defined on different worksheets.
+Usage:
+
+    $ lein deps
+    $ lein run path-to-dir-with-excel-files
 
 Worksheet 1
 
@@ -19,15 +22,15 @@ Worksheet 2
 
 Worksheet 3
 
-| id            | properties    | property_d    | property_e    |
+| id            | properties    | prop_a        | prop_b        |
 | ------------- | ------------- | ------------- | ------------- |
-| foo           |               | 66            | 100           |
-| foo           |               | 77            | 200           |
-| foo           |               | 88            | 300           |
-| bar           |               | 99            | 400           |
-| bar           |               | 111           | 500           |
+| foo           |               | baz_1         | 100           |
+| foo           |               | baz_2         | 200           |
+| foo           |               | baz_3         | 300           |
+| bar           |               | baz_4         | 400           |
+| bar           |               | baz_5         | 500           |
 
-Will end up as this:
+Result
 
 ```json
 [
@@ -60,16 +63,16 @@ Will end up as this:
         },
         "properties": [
             {
-                "property_d": 66,
-                "property_e": 100
+                "prop_a": "baz_1",
+                "prop_b": 100
             },
             {
-                "property_d": 77,
-                "property_e": 200
+                "prop_a": "baz_2",
+                "prop_b": 200
             },
             {
-                "property_d": 88,
-                "property_e": 300
+                "prop_a": "baz_3",
+                "prop_b": 300
             }
         ]
     },
@@ -95,12 +98,12 @@ Will end up as this:
         },
         "properties": [
             {
-                "property_d": 99,
-                "property_e": 400
+                "prop_a": "baz_4",
+                "prop_b": 400
             },
             {
-                "property_d": 111,
-                "property_e": 500
+                "prop_a": "baz_5",
+                "prop_b": 500
             }
         ]
     }
