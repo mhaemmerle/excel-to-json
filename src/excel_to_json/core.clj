@@ -7,7 +7,7 @@
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
-(def pk :id)
+(def ^:dynamic *primary-key* :id)
 
 (defn text-timestamp
   []
@@ -96,7 +96,7 @@
         output-file (str (.getParent file) "/" (get-filename file) ".json")
         document (read-xls file-path :header-keywords true :all-sheets? true)]
     (try
-      (let [config (flatten (parse-document document pk))]
+      (let [config (flatten (parse-document document *primary-key*))]
         (spit output-file (generate-string config {:pretty true}))
         (watcher-print "Converted" file-path "->" output-file))
       (catch Exception e
