@@ -66,11 +66,13 @@
       ;; TODO remove either primary or current key
       ;; (println primary-key current-key secondary-key)
       (reduce (fn [acc row]
-                (let [nested-key (safe-keyword (get row secondary-key))
+                (let [nested-key (get row secondary-key)
                       sub (unpack-keys (dissoc row primary-key secondary-key))]
                   (if (empty? sub)
                     acc
-                    (assoc-in acc [secondary-key nested-key] sub))))
+                    (if (nil? nested-key)
+                      (update-in acc [secondary-key] conj sub)
+                      (assoc-in acc [secondary-key (safe-keyword nested-key)] sub)))))
               config secondary-config))))
 
 (defn parse-document
