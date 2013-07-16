@@ -3,7 +3,8 @@
   (:require [cheshire.core :refer [generate-string]]
             [incanter.excel :refer [read-xls]]
             [clojure-watch.core :refer [start-watch]]
-            [clansi.core :refer [style]]))
+            [clansi.core :refer [style]]
+            [flatland.ordered.map :refer [ordered-map]]))
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
@@ -49,7 +50,7 @@
   (reduce (fn [acc [k v]]
             (if (or (nil? v) (and (coll? v) (empty? v)))
               acc
-              (assoc-in acc (split-keys k) (safe-value v)))) {} m))
+              (assoc-in acc (split-keys k) (safe-value v)))) (ordered-map) m))
 
 (defn column-names-and-rows
   [sheet]
@@ -57,23 +58,28 @@
         [_ rows] (first (rest sheet))]
     [column-names rows]))
 
+(defn ensure-ordered
+  [m k]
+  (if (nil? (k m)) (assoc m k (ordered-map)) m))
+
 (defn add-sheet-config
   [primary-key current-key sheets config]
   (reduce (fn [acc0 sheet]
             (let [[column-names rows] (column-names-and-rows sheet)
                   secondary-key (second column-names)
                   secondary-config (get (group-by primary-key rows) (name current-key))]
-                  ;; TODO remove either primary or current key
-                  ;; (println primary-key current-key secondary-key)
+              ;; TODO remove either primary or current key
+              ;; (println primary-key current-key secondary-key)
               (reduce (fn [acc row]
                         (let [nested-key (get row secondary-key)
+                              safe-nested-key (safe-keyword nested-key)
                               sub (unpack-keys (dissoc row primary-key secondary-key))]
                           (if (empty? sub)
                             acc
                             (if (nil? nested-key)
                               (update-in acc [secondary-key] conj sub)
-                              (assoc-in acc [secondary-key
-                                             (safe-keyword nested-key)] sub)))))
+                              (assoc-in (ensure-ordered acc secondary-key)
+                                        [secondary-key safe-nested-key] sub)))))
                       acc0 secondary-config))) config sheets))
 
 (defn parse-document
