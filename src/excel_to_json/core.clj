@@ -59,21 +59,22 @@
 
 (defn add-sheet-config
   [primary-key current-key sheets config]
-  (for [sheet sheets]
-    (let [[column-names rows] (column-names-and-rows sheet)
-          secondary-key (second column-names)
-          secondary-config (get (group-by primary-key rows) (name current-key))]
-      ;; TODO remove either primary or current key
-      ;; (println primary-key current-key secondary-key)
-      (reduce (fn [acc row]
-                (let [nested-key (get row secondary-key)
-                      sub (unpack-keys (dissoc row primary-key secondary-key))]
-                  (if (empty? sub)
-                    acc
-                    (if (nil? nested-key)
-                      (update-in acc [secondary-key] conj sub)
-                      (assoc-in acc [secondary-key (safe-keyword nested-key)] sub)))))
-              config secondary-config))))
+  (reduce (fn [acc0 sheet]
+            (let [[column-names rows] (column-names-and-rows sheet)
+                  secondary-key (second column-names)
+                  secondary-config (get (group-by primary-key rows) (name current-key))]
+                  ;; TODO remove either primary or current key
+                  ;; (println primary-key current-key secondary-key)
+              (reduce (fn [acc row]
+                        (let [nested-key (get row secondary-key)
+                              sub (unpack-keys (dissoc row primary-key secondary-key))]
+                          (if (empty? sub)
+                            acc
+                            (if (nil? nested-key)
+                              (update-in acc [secondary-key] conj sub)
+                              (assoc-in acc [secondary-key
+                                             (safe-keyword nested-key)] sub)))))
+                      acc0 secondary-config))) config sheets))
 
 (defn parse-document
   [document primary-key]
