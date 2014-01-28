@@ -2,7 +2,7 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.cli "0.2.2"]
                  [cheshire "4.0.3"]
-                 [incanter "1.5.1"]
+                 [incanter "1.5.4"]
                  [myguidingstar/clansi "1.3.0"]
                  [clojure-watch "0.1.9"]
                  [org.flatland/ordered "1.5.1"]]
