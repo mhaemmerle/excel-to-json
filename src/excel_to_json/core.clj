@@ -100,9 +100,9 @@
   (first (clojure.string/split (.getName file) #"\.")))
 
 (defn convert-and-save
-  [file]
+  [file target-dir]
   (let [file-path (.getPath file)
-        output-file (str (.getParent file) "/" (get-filename file) ".json")
+        output-file (str target-dir "/" (get-filename file) ".json")
         document (read-xls file-path :header-keywords true :all-sheets? true)]
     (try
       (let [config (flatten (parse-document document *primary-key*))]
@@ -120,15 +120,15 @@
       (status-print "[done]"))))
 
 (defn start
-  [source-dir]
-  (watcher-print "Converting files in" source-dir)
+  [source-dir target-dir]
+  (watcher-print "Converting files in" source-dir "with output to" target-dir)
   (let [directory (clojure.java.io/file source-dir)
         xlsx-files (reduce (fn [acc f]
                              (if (and (.isFile f) (is-xlsx? f))
                                (conj acc f)
                                acc)) [] (file-seq directory))]
     (doseq [file xlsx-files]
-      (convert-and-save file))
+      (convert-and-save file target-dir))
     (status-print "[done]")
     (start-watch [{:path source-dir
                    :event-types [:create :modify]
@@ -139,5 +139,6 @@
 (defn -main
   [& args]
   (if (seq args)
-    (start (first args))
-    (watcher-print "Source directory path is required\n")))
+    (let [source-dir (first args) target-dir (second args)]
+      (start source-dir (or target-dir source-dir)))
+    (watcher-print "Usage: excel-to-json SOURCEDIR [TARGETDIR]\n")))
