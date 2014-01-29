@@ -1,10 +1,11 @@
 (ns excel-to-json.core
   (:gen-class)
   (:require [cheshire.core :refer [generate-string]]
-            [incanter.excel :refer [read-xls]]
             [clojure-watch.core :refer [start-watch]]
             [clansi.core :refer [style]]
-            [flatland.ordered.map :refer [ordered-map]]))
+            [flatland.ordered.map :refer [ordered-map]]
+            [clj-excel.core :as ce])
+  (:import org.apache.poi.ss.usermodel.DataFormatter))
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
@@ -36,27 +37,33 @@
   [k]
   (keyword (str (if (instance? Number k) (long k) k))))
 
+(defn apply-format
+  [cell]
+  (.formatCellValue (DataFormatter.) cell))
+
 (defn safe-value
-  [v]
-  (let [r (if (instance? String v)
-            (read-string v)
-            v)]
-    (if (and (number? r) (= 0.0 (mod r 1)))
-      (long r)
-      r)))
+  [cell]
+  (let [value (apply-format cell)]
+    (try
+      (. Integer parseInt value)
+      (catch Exception e
+        (try
+          (. Float parseFloat value)
+          (catch Exception e
+            value))))))
 
 (defn unpack-keys
-  [m]
-  (reduce (fn [acc [k v]]
-            (if (or (nil? v) (and (coll? v) (empty? v)))
-              acc
-              (assoc-in acc (split-keys k) (safe-value v)))) (ordered-map) m))
+  [column-names row]
+  (reduce (fn [acc [header cell]]
+            (assoc-in acc (split-keys header) (safe-value cell)))
+          (ordered-map)
+          (zipmap column-names row)))
 
 (defn column-names-and-rows
   [sheet]
-  (let [[_ column-names] (first sheet)
-        [_ rows] (first (rest sheet))]
-    [column-names rows]))
+  (let [header-row (first sheet)
+        column-names (map #(keyword (ce/cell-value %)) header-row)]
+    [column-names (rest sheet)]))
 
 (defn ensure-ordered
   [m k]
@@ -67,13 +74,14 @@
   (reduce (fn [acc0 sheet]
             (let [[column-names rows] (column-names-and-rows sheet)
                   secondary-key (second column-names)
-                  secondary-config (get (group-by primary-key rows) (name current-key))]
+                  unpacked-rows (map #(unpack-keys column-names %) rows)
+                  grouped-rows (group-by primary-key unpacked-rows)
+                  secondary-config (get grouped-rows (name current-key))]
               ;; TODO remove either primary or current key
-              ;; (println primary-key current-key secondary-key)
               (reduce (fn [acc row]
                         (let [nested-key (get row secondary-key)
                               safe-nested-key (safe-keyword nested-key)
-                              sub (unpack-keys (dissoc row primary-key secondary-key))]
+                              sub (dissoc row primary-key secondary-key)]
                           (if (empty? sub)
                             acc
                             (if (nil? nested-key)
@@ -82,14 +90,13 @@
                                         [secondary-key safe-nested-key] sub)))))
                       acc0 secondary-config))) config sheets))
 
-(defn parse-document
-  [document primary-key]
-  (let [global-sheet (first document)
-        [column-names rows] (column-names-and-rows global-sheet)]
+(defn parse-workbook
+  [workbook primary-key]
+  (let [[column-names rows] (column-names-and-rows (first workbook))]
     (for [row rows]
-      (let [current-config (unpack-keys row)
-            current-key (keyword (get row primary-key))]
-        (add-sheet-config primary-key current-key (rest document) current-config)))))
+      (let [current-config (unpack-keys column-names row)
+            current-key (keyword (get current-config primary-key))]
+        (add-sheet-config primary-key current-key (rest workbook) current-config)))))
 
 (defn is-xlsx?
   [file]
@@ -99,14 +106,19 @@
   [file]
   (first (clojure.string/split (.getName file) #"\.")))
 
+(defn open-workbook
+  [file-path]
+  (ce/workbook-xssf file-path))
+
 (defn convert-and-save
   [file target-dir]
   (let [file-path (.getPath file)
         output-file (str target-dir "/" (get-filename file) ".json")
-        document (read-xls file-path :header-keywords true :all-sheets? true)]
+        workbook (open-workbook file-path)]
     (try
-      (let [config (flatten (parse-document document *primary-key*))]
-        (spit output-file (generate-string config {:pretty true}))
+      (let [config (parse-workbook workbook *primary-key*)
+            json-string (generate-string config {:pretty true})]
+        (spit output-file json-string)
         (watcher-print "Converted" file-path "->" output-file))
       (catch Exception e
         (error-print "Conversion failed with: " e "\n")))))
