@@ -89,17 +89,36 @@
                               (update-in acc [secondary-key] conj sub)
                               (assoc-in (ensure-ordered acc secondary-key)
                                         [secondary-key safe-nested-key] sub)))))
-                      acc0 secondary-config))) config sheets))
+                      acc0 secondary-config)))
+          config sheets))
 
+(defn filename-from-sheet
+  [sheet]
+  (nth (re-find #"^(.*)\.json(#.*)?$" (.getSheetName sheet)) 1))
+
+(defn group-sheets
+  [workbook]
+  (seq (reduce (fn [acc sheet]
+                 (if-let [filename (filename-from-sheet sheet)]
+                   (update-in acc [filename] (fnil conj []) sheet) acc))
+               {} workbook)))
+
+(defn parse-sheets
+  [sheets]
+  (clojure.pprint/pprint sheets)
+  (let [[column-names rows] (column-names-and-rows (first sheets))
+        primary-key (first column-names)]
+    (doall (for [row rows]
+      (let [config (unpack-keys column-names row)
+            current-key (keyword (get config primary-key))]
+        (add-sheet-config primary-key current-key (rest sheets) config))))))
+
+;; TODO primary-key should come from sheet-group
 (defn parse-workbook
   [workbook primary-key]
   (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
-    (doall (let [[column-names rows] (column-names-and-rows (first workbook))]
-             (for [row rows]
-               (let [current-config (unpack-keys column-names row)
-                     current-key (keyword (get current-config primary-key))]
-                 (add-sheet-config primary-key current-key
-                                   (rest workbook) current-config)))))))
+    (doall (for [[name sheets] (group-sheets workbook)]
+             [name (parse-sheets sheets)]))))
 
 (defn is-xlsx?
   [file]
@@ -115,16 +134,18 @@
 
 (defn convert-and-save
   [file target-dir]
-  (let [file-path (.getPath file)
-        output-file (str target-dir "/" (get-filename file) ".json")
-        workbook (open-workbook file-path)]
-    (try
-      (let [config (parse-workbook workbook default-primary-key)
-            json-string (generate-string config {:pretty true})]
-        (spit output-file json-string)
-        (watcher-print "Converted" file-path "->" output-file))
-      (catch Exception e
-        (error-print "Conversion failed with: " e "\n")))))
+  (try
+    (let [file-path (.getPath file)
+          workbook (open-workbook file-path)]
+      (let [parsed-configs (parse-workbook workbook default-primary-key)]
+        (doseq [[filename config] parsed-configs]
+          (let [output-file (str target-dir "/" filename ".json")
+                json-string (generate-string config {:pretty true})]
+            (spit output-file json-string)
+            (watcher-print "Converted" file-path "->" output-file)))))
+    (catch Exception e
+      (error-print (str "Converting" file "failed with: " e "\n"))
+      (clojure.pprint/pprint (.getStackTrace e)))))
 
 (defn watch-callback
   [target-dir event filename]
