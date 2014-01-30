@@ -11,38 +11,30 @@
 
 (def ^:dynamic *evaluator*)
 
-(defn text-timestamp
-  []
+(defn text-timestamp []
   (let [c (java.util.Calendar/getInstance)
         f (java.text.SimpleDateFormat. "HH:mm:ss")]
     (.format f (.getTime c))))
 
-(defn watcher-print
-  [& text]
+(defn watcher-print [& text]
   (apply println (style (str (text-timestamp) " :: watcher :: ") :magenta) text))
 
-(defn error-print
-  [& text]
+(defn error-print [& text]
   (apply println (style "error :: " :red) text))
 
-(defn status-print
-  [text]
+(defn status-print [text]
   (println "    " (style text :green)))
 
-(defn split-keys
-  [k]
+(defn split-keys [k]
   (map keyword (clojure.string/split (name k) #"\.")))
 
-(defn safe-keyword
-  [k]
+(defn safe-keyword [k]
   (keyword (str (if (instance? Number k) (long k) k))))
 
-(defn apply-format
-  [cell]
+(defn apply-format [cell]
   (.formatCellValue (DataFormatter.) cell *evaluator*))
 
-(defn safe-value
-  [cell]
+(defn safe-value [cell]
   (let [value (apply-format cell)]
     (try
       (. Integer parseInt value)
@@ -52,25 +44,21 @@
           (catch Exception e
             value))))))
 
-(defn unpack-keys
-  [column-names row]
+(defn unpack-keys [column-names row]
   (reduce (fn [acc [header cell]]
             (assoc-in acc (split-keys header) (safe-value cell)))
           (ordered-map)
           (zipmap column-names row)))
 
-(defn column-names-and-rows
-  [sheet]
+(defn column-names-and-rows [sheet]
   (let [header-row (first sheet)
         column-names (map #(keyword (safe-value %)) header-row)]
     [column-names (rest sheet)]))
 
-(defn ensure-ordered
-  [m k]
+(defn ensure-ordered [m k]
   (if (nil? (k m)) (assoc m k (ordered-map)) m))
 
-(defn add-sheet-config
-  [primary-key current-key sheets config]
+(defn add-sheet-config [primary-key current-key sheets config]
   (reduce (fn [acc0 sheet]
             (let [[column-names rows] (column-names-and-rows sheet)
                   secondary-key (second column-names)
@@ -91,19 +79,16 @@
                       acc0 secondary-config)))
           config sheets))
 
-(defn filename-from-sheet
-  [sheet]
+(defn filename-from-sheet [sheet]
   (nth (re-find #"^(.*)\.json(#.*)?$" (.getSheetName sheet)) 1))
 
-(defn group-sheets
-  [workbook]
+(defn group-sheets [workbook]
   (seq (reduce (fn [acc sheet]
                  (if-let [filename (filename-from-sheet sheet)]
                    (update-in acc [filename] (fnil conj []) sheet) acc))
                {} workbook)))
 
-(defn parse-sheets
-  [sheets]
+(defn parse-sheets [sheets]
   (let [[column-names rows] (column-names-and-rows (first sheets))
         primary-key (first column-names)]
     (doall (for [row rows]
@@ -111,26 +96,21 @@
             current-key (keyword (get config primary-key))]
         (add-sheet-config primary-key current-key (rest sheets) config))))))
 
-(defn parse-workbook
-  [workbook]
+(defn parse-workbook [workbook]
   (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
     (doall (for [[name sheets] (group-sheets workbook)]
              [name (parse-sheets sheets)]))))
 
-(defn is-xlsx?
-  [file]
+(defn is-xlsx? [file]
   (re-matches #"^((?!~\$).)*.xlsx$" (.getName file)))
 
-(defn get-filename
-  [file]
+(defn get-filename [file]
   (first (clojure.string/split (.getName file) #"\.")))
 
-(defn open-workbook
-  [file-path]
+(defn open-workbook [file-path]
   (ce/workbook-xssf file-path))
 
-(defn convert-and-save
-  [file target-dir]
+(defn convert-and-save [file target-dir]
   (try
     (let [file-path (.getPath file)
           workbook (open-workbook file-path)]
@@ -144,16 +124,14 @@
       (error-print (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
 
-(defn watch-callback
-  [target-dir event filename]
+(defn watch-callback [target-dir event filename]
   (let [file (clojure.java.io/file filename)]
     (when (is-xlsx? file)
       (watcher-print "Updating changed file...")
       (convert-and-save file target-dir)
       (status-print "[done]"))))
 
-(defn start
-  [source-dir target-dir]
+(defn start [source-dir target-dir]
   (watcher-print "Converting files in" source-dir "with output to" target-dir)
   (let [directory (clojure.java.io/file source-dir)
         xlsx-files (reduce (fn [acc f]
@@ -169,8 +147,7 @@
                    :callback (partial watch-callback target-dir)
                    :options {:recursive false}}])))
 
-(defn -main
-  [& args]
+(defn -main [& args]
   (if (seq args)
     (let [source-dir (first args) target-dir (second args)]
       (start source-dir (or target-dir source-dir)))
