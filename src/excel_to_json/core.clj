@@ -104,7 +104,6 @@
 
 (defn parse-sheets
   [sheets]
-  (clojure.pprint/pprint sheets)
   (let [[column-names rows] (column-names-and-rows (first sheets))
         primary-key (first column-names)]
     (doall (for [row rows]
