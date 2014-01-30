@@ -141,7 +141,7 @@
         xlsx-files (reduce (fn [acc f]
                              (if (and (.isFile f) (is-xlsx? f))
                                (conj acc f)
-                               acc)) [] (file-seq directory))]
+                               acc)) [] (.listFiles directory))]
     (doseq [file xlsx-files]
       (convert-and-save file target-dir))
     (status-print "[done]")
