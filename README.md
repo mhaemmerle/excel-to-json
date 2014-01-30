@@ -13,7 +13,7 @@ This is a tool that converts Excel files of a certain structure to JSON files. I
 
 ## Sheet Rules
 
-The Excel workbook has to follow a few rules to be parsable. Only sheets names ending with ".json" will be converted to JSON files. The name of the JSON file will be the same as the the sheet name. Thus, a workbook containing three sheets, *Example.json*, *Numbers* and *Data.json* will only produce two files, `example.json` and `data.json`.
+The Excel workbook has to follow a few rules to be parsable. Only sheets names ending with ".json" will be converted to JSON files. The name of the JSON file will be the same as the the sheet name. Thus, a workbook containing three sheets, *Example.json*, *Numbers* and *Data.json* will only produce two files, `Example.json` and `Data.json`.
 
 ## Data rules
 
