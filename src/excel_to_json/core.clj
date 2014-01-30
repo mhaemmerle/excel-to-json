@@ -9,7 +9,6 @@
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
-(def default-primary-key :id)
 (def ^:dynamic *evaluator*)
 
 (defn text-timestamp
@@ -113,9 +112,8 @@
             current-key (keyword (get config primary-key))]
         (add-sheet-config primary-key current-key (rest sheets) config))))))
 
-;; TODO primary-key should come from sheet-group
 (defn parse-workbook
-  [workbook primary-key]
+  [workbook]
   (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
     (doall (for [[name sheets] (group-sheets workbook)]
              [name (parse-sheets sheets)]))))
@@ -137,7 +135,7 @@
   (try
     (let [file-path (.getPath file)
           workbook (open-workbook file-path)]
-      (let [parsed-configs (parse-workbook workbook default-primary-key)]
+      (let [parsed-configs (parse-workbook workbook)]
         (doseq [[filename config] parsed-configs]
           (let [output-file (str target-dir "/" filename ".json")
                 json-string (generate-string config {:pretty true})]

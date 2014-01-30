@@ -22,5 +22,5 @@
 
 (deftest parse-excel
   (let [file-path "resources/test.xlsx"
-        data (parse-workbook (open-workbook file-path) :id)]
+        data (parse-workbook (open-workbook file-path))]
     (is (= expected (parse-string (generate-string data) true)))))
