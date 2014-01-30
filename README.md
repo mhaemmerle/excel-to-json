@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mhaemmerle/excel-to-json.png?branch=master)](https://travis-ci.org/mhaemmerle/excel-to-json)
+
 Usage:
 
     $ lein deps
