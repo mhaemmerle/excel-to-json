@@ -6,5 +6,6 @@
                  [clojure-watch "0.1.9"]
                  [org.flatland/ordered "1.5.1"]
                  [clj-excel "0.0.1"]]
+  :plugins [[lein-marginalia "0.7.1"]]
   :jvm-opts ["-Djava.awt.headless=true"]
   :main excel-to-json.core)
