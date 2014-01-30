@@ -1,7 +1,8 @@
 (ns excel-to-json.core-test
   (:use clojure.test
         excel-to-json.core)
-  (:require [cheshire.core :refer [generate-string parse-string]]))
+  (:require [cheshire.core :refer [generate-string parse-string]]
+            [excel-to-json.converter :as e2j]))
 
 (def expected
   [["foo" [{:prop_a "baz_1", :value "sun", :name "baz"}
@@ -40,5 +41,5 @@
 
 (deftest parse-excel
   (let [file-path "resources/test.xlsx"
-        data (parse-workbook (open-workbook file-path))]
+        data (e2j/convert file-path)]
     (is (= expected (parse-string (generate-string data) true)))))
