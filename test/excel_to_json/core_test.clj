@@ -4,7 +4,7 @@
   (:require [cheshire.core :refer [generate-string parse-string]]))
 
 (def expected [{:property_2 "abc",
-                :property_1 123,
+                :property_1 600,
                 :id "foo",
                 :traits
                 {:1 {:property_c {:qux "1100%"}, :property_b 9.0, :property_a "a"},
@@ -13,7 +13,7 @@
                 :properties
                 {:baz_1 {:prop_a 100}, :baz_2 {:prop_a 200}, :baz_3 {:prop_a 300}}}
                {:property_2 "def",
-                :property_1 345,
+                :property_1 900,
                 :id "bar",
                 :traits
                 {:1 {:property_c {:qux "4400%"}, :property_b 6.0, :property_a "d"},

@@ -10,6 +10,7 @@
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
 (def ^:dynamic *primary-key* :id)
+(def ^:dynamic *evaluator* nil)
 
 (defn text-timestamp
   []
@@ -39,7 +40,7 @@
 
 (defn apply-format
   [cell]
-  (.formatCellValue (DataFormatter.) cell))
+  (.formatCellValue (DataFormatter.) cell *evaluator*))
 
 (defn safe-value
   [cell]
@@ -62,7 +63,7 @@
 (defn column-names-and-rows
   [sheet]
   (let [header-row (first sheet)
-        column-names (map #(keyword (ce/cell-value %)) header-row)]
+        column-names (map #(keyword (safe-value %)) header-row)]
     [column-names (rest sheet)]))
 
 (defn ensure-ordered
@@ -92,11 +93,13 @@
 
 (defn parse-workbook
   [workbook primary-key]
-  (let [[column-names rows] (column-names-and-rows (first workbook))]
-    (for [row rows]
-      (let [current-config (unpack-keys column-names row)
-            current-key (keyword (get current-config primary-key))]
-        (add-sheet-config primary-key current-key (rest workbook) current-config)))))
+  (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
+    (doall (let [[column-names rows] (column-names-and-rows (first workbook))]
+             (for [row rows]
+               (let [current-config (unpack-keys column-names row)
+                     current-key (keyword (get current-config primary-key))]
+                 (add-sheet-config primary-key current-key
+                                   (rest workbook) current-config)))))))
 
 (defn is-xlsx?
   [file]
