@@ -9,8 +9,8 @@
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
-(def ^:dynamic *primary-key* :id)
-(def ^:dynamic *evaluator* nil)
+(def default-primary-key :id)
+(def ^:dynamic *evaluator*)
 
 (defn text-timestamp
   []
@@ -119,7 +119,7 @@
         output-file (str target-dir "/" (get-filename file) ".json")
         workbook (open-workbook file-path)]
     (try
-      (let [config (parse-workbook workbook *primary-key*)
+      (let [config (parse-workbook workbook default-primary-key)
             json-string (generate-string config {:pretty true})]
         (spit output-file json-string)
         (watcher-print "Converted" file-path "->" output-file))
