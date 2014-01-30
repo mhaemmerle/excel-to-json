@@ -127,11 +127,11 @@
         (error-print "Conversion failed with: " e "\n")))))
 
 (defn watch-callback
-  [event filename]
+  [target-dir event filename]
   (let [file (clojure.java.io/file filename)]
     (when (is-xlsx? file)
       (watcher-print "Updating changed file...")
-      (convert-and-save file)
+      (convert-and-save file target-dir)
       (status-print "[done]"))))
 
 (defn start
@@ -148,7 +148,7 @@
     (start-watch [{:path source-dir
                    :event-types [:create :modify]
                    :bootstrap (fn [path] (watcher-print "Starting to watch" path))
-                   :callback watch-callback
+                   :callback (partial watch-callback target-dir)
                    :options {:recursive false}}])))
 
 (defn -main
