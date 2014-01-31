@@ -45,16 +45,16 @@
                       {:prop_a "baz_4" :prop_b 400}]}]]]]
     (is (= expected configs))))
 
-(deftest convert-arrays
+(deftest convert-array
   (let [configs (convert "resources/test_array.xlsx")
-        expected [["test"
+        expected [["test_array"
                    [{:properties [{:prop_b 100 :prop_a "baz_1"}]
                      :id "foo"}]]]]
     (is (= expected configs))))
 
-(deftest convert-arrays
+(deftest convert-map
   (let [configs (convert "resources/test_map.xlsx")
-        expected [["test"
+        expected [["test_map"
                    [{:traits {:first {:a 1 :b 9} :second {:a 2 :b 8}}
                      :id "foo"}]]]]
     (is (= expected configs))))
