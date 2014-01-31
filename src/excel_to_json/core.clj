@@ -3,7 +3,7 @@
   (:require [cheshire.core :refer [generate-string]]
             [clojure-watch.core :refer [start-watch]]
             [clansi.core :refer [style]]
-            [excel-to-json.converter :as e2j]))
+            [excel-to-json.converter :as converter]))
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
@@ -30,7 +30,7 @@
 (defn convert-and-save [file target-dir]
   (try
     (let [file-path (.getPath file)]
-      (doseq [[filename config] (e2j/convert file-path)]
+      (doseq [[filename config] (converter/convert file-path)]
         (let [output-file (str target-dir "/" filename ".json")
               json-string (generate-string config {:pretty true})]
           (spit output-file json-string)
