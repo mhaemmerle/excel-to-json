@@ -1,7 +1,7 @@
 (ns excel-to-json.converter
   (:require [flatland.ordered.map :refer [ordered-map]]
             [clj-excel.core :as ce])
-  (:import org.apache.poi.ss.usermodel.DataFormatter))
+  (:import [org.apache.poi.ss.usermodel DataFormatter Cell]))
 
 (def ^:dynamic *evaluator*)
 
@@ -25,10 +25,14 @@
             value))))))
 
 (defn unpack-keys [column-names row]
-  (reduce (fn [acc [header cell]]
-            (assoc-in acc (split-keys header) (safe-value cell)))
-          (ordered-map)
-          (zipmap column-names row)))
+  (let [cv (vec column-names)
+        row-map (map (fn [cell]
+                       [(get cv (.getColumnIndex cell)) cell]) row)]
+    (reduce (fn [acc [header cell]]
+              (if (= (.getCellType cell) Cell/CELL_TYPE_BLANK)
+                acc
+                (assoc-in acc (split-keys header) (safe-value cell))))
+            (ordered-map) row-map)))
 
 (defn column-names-and-rows [sheet]
   (let [header-row (first sheet)
@@ -37,6 +41,11 @@
 
 (defn ensure-ordered [m k]
   (if (nil? (k m)) (assoc m k (ordered-map)) m))
+
+(defn blank? [value]
+  (cond
+   (integer? value) false
+   :else (clojure.string/blank? value)))
 
 (defn add-sheet-config [primary-key current-key sheets config]
   (reduce (fn [acc0 sheet]
@@ -52,7 +61,7 @@
                               sub (dissoc row primary-key secondary-key)]
                           (if (empty? sub)
                             acc
-                            (if (nil? nested-key)
+                            (if (blank? nested-key)
                               (update-in acc [secondary-key] conj sub)
                               (assoc-in (ensure-ordered acc secondary-key)
                                         [secondary-key safe-nested-key] sub)))))
@@ -72,9 +81,9 @@
   (let [[column-names rows] (column-names-and-rows (first sheets))
         primary-key (first column-names)]
     (doall (for [row rows]
-      (let [config (unpack-keys column-names row)
-            current-key (keyword (get config primary-key))]
-        (add-sheet-config primary-key current-key (rest sheets) config))))))
+             (let [config (unpack-keys column-names row)
+                   current-key (keyword (get config primary-key))]
+               (add-sheet-config primary-key current-key (rest sheets) config))))))
 
 (defn parse-workbook [workbook]
   (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
