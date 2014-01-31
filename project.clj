@@ -1,6 +1,6 @@
 (defproject excel-to-json "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/tools.cli "0.2.2"]
+                 [org.clojure/tools.cli "0.3.1"]
                  [cheshire "5.3.1"]
                  [myguidingstar/clansi "1.3.0"]
                  [clojure-watch "0.1.9"]
