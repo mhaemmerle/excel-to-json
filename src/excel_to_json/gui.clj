@@ -21,6 +21,9 @@
   ([key default-value]
      (.get *preferences* (name key) default-value)))
 
+(defn put-preference [key value]
+  (.put *preferences* key value))
+
 (defn create-border []
   (javax.swing.BorderFactory/createLineBorder java.awt.Color/BLACK))
 
@@ -29,6 +32,7 @@
         handler (fn [event]
                   (when-let [file (sch/choose-file :type "Select" :selection-mode :dirs-only)]
                     (sc/text! (sc/select (sc/to-root event) [text]) (.getPath file))
+                    (put-preference (str (name tag) "-directory") (.getPath file))
                     (put! ch [:path-change {:type tag :file file}])))]
     (sc/button :text "Choose" :action (sc/action :name "Open" :handler handler))))
 
@@ -41,10 +45,13 @@
     (doto (sc/scrollable listbox)
       (.setBorder ,, (create-border)))))
 
-;; (get-preference :source-directory "")
 (defn create-header [ch]
-  (let [source-text (sc/text :id :source-text :editable? false)
-        target-text (sc/text :id :target-text :editable? false)]
+  (let [source-text (sc/text :id :source-text
+                             :text (get-preference :source-directory "")
+                             :editable? false)
+        target-text (sc/text :id :target-text
+                             :text (get-preference :target-directory "")
+                             :editable? false)]
     (sm/mig-panel
      :constraints ["wrap 3, insets 0"
                    "[shrink 0]10[200, grow, fill]10[shrink 0]"
