@@ -79,7 +79,7 @@
                    :south (create-convert-button ch)))
 
 (defn initialize [ch log-model]
-  (let [frame (sc/frame :title "excel-to-json"
+  (let [frame (sc/frame :title "Excel > JSON"
                         :width 800
                         :height 600
                         :on-close :exit)
