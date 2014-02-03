@@ -24,17 +24,13 @@
 (defn create-border []
   (javax.swing.BorderFactory/createLineBorder java.awt.Color/BLACK))
 
-(defn get-select-button [ch tag text-model]
-  (let [success-fn (fn [chooser file]
-                     (let [path (.getPath file)]
-                       ;; FIXME
-                       (reset! text-model path)
-                       (put! ch [:path-change {:type tag :path path}])))
-        action (fn [event]
-                 (sch/choose-file :type "Select"
-                                  :selection-mode :dirs-only
-                                  :success-fn (partial success-fn)))]
-    (sc/button :text "Choose" :listen [:action action])))
+(defn get-select-button [ch tag]
+  (let [text (keyword (str "#" (name tag) "-text"))
+        handler (fn [event]
+                  (when-let [file (sch/choose-file :type "Select" :selection-mode :dirs-only)]
+                    (sc/text! (sc/select (sc/to-root event) [text]) (.getPath file))
+                    (put! ch [:path-change {:type tag :file file}])))]
+    (sc/button :text "Choose" :action (sc/action :name "Open" :handler handler))))
 
 (defn item-renderer [renderer info]
   (sc/config! renderer :text (:value info)))
@@ -45,23 +41,20 @@
     (doto (sc/scrollable listbox)
       (.setBorder ,, (create-border)))))
 
+;; (get-preference :source-directory "")
 (defn create-header [ch]
-  (let [source-model (atom (get-preference :source-directory ""))
-        source-text (sc/text :id :source-text :editable? false)
-        target-model (atom (get-preference :target-directory ""))
+  (let [source-text (sc/text :id :source-text :editable? false)
         target-text (sc/text :id :target-text :editable? false)]
-    (sb/bind source-model (sb/property source-text :text))
-    (sb/bind target-model (sb/property target-text :text))
     (sm/mig-panel
      :constraints ["wrap 3, insets 0"
                    "[shrink 0]10[200, grow, fill]10[shrink 0]"
                    "[shrink 0]5[]"]
      :items [["Source directory:"]
              [source-text]
-             [(get-select-button ch :source source-model)]
+             [(get-select-button ch :source)]
              ["Target directory:"]
              [target-text]
-             [(get-select-button ch :target target-model)]])))
+             [(get-select-button ch :target)]])))
 
 (defn create-convert-button [ch]
   (let [items [(sc/checkbox :text "Watch directory"
