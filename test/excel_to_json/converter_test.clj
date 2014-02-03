@@ -58,3 +58,9 @@
                    [{:traits {:first {:a 1 :b 9} :second {:a 2 :b 8}}
                      :id "foo"}]]]]
     (is (= expected configs))))
+
+(deftest empty-rows
+  (let [configs (convert "resources/test_empty_rows.xlsx")
+        expected [["test_empty_rows"
+                   [{:value 1 :id "foo"} {:value 2 :id "bar"}]]]]
+    (is (= expected configs))))

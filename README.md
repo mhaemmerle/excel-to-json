@@ -189,6 +189,16 @@ The column *traits* will be indexed by the values in that column, and the follow
 ]
 ```
 
+## Extra Data
+
+Any extra data can be store in a sheet that is targeted for conversion to JSON. The only limitation is that the row must have its first cell empty. This means in effect, whenever a row does not have a cell that belongs to the main ID column (the first column), it will be ignored. Thus you can have empty rows, and rows that have extra data in all cells but the first.
+
+| id            | property_1       | property_2    |
+| ------------- | ---------------- | ------------- |
+| foo           | 123              | abc           |
+| bar           | 345              | def           |
+|               | will_be_ignored  | 1             |
+
 # Example
 
 *Example.json* (Sheet 1)

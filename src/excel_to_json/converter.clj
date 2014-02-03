@@ -34,10 +34,14 @@
                 (assoc-in acc (split-keys header) (safe-value cell))))
             (ordered-map) row-map)))
 
+(defn non-empty-rows [rows]
+  (filter (fn [row] (= (.getColumnIndex (first row)) 0)) rows))
+
 (defn column-names-and-rows [sheet]
-  (let [header-row (first sheet)
-        column-names (map #(keyword (safe-value %)) header-row)]
-    [column-names (rest sheet)]))
+  (let [rows (non-empty-rows sheet)]
+    (let [header-row (first rows)
+          column-names (map #(keyword (safe-value %)) header-row)]
+      [column-names (rest rows)])))
 
 (defn ensure-ordered [m k]
   (if (nil? (k m)) (assoc m k (ordered-map)) m))
