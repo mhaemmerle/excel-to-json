@@ -4,7 +4,9 @@
             [clojure-watch.core :refer [start-watch]]
             [clansi.core :refer [style]]
             [clojure.tools.cli :as cli]
-            [excel-to-json.converter :as converter])
+            [excel-to-json.converter :as converter]
+            [excel-to-json.gui :as gui]
+            [clojure.core.async :refer [go chan <! >! put!]])
   (:import java.io.File))
 
 (set! *warn-on-reflection* true)
@@ -71,7 +73,28 @@
   [[nil "--disable-watching" "Disable watching" :default false :flag true]
    ["-h" "--help" "Show help" :default false :flag true]])
 
+;; source-dir
+;; target-dir
+;; watching-enabled?
+
+;; be able to change watch target
+;; re-run on directory-change
+
 (defn -main [& args]
+
+  (let [ch (chan)
+        debug-model (atom [])]
+    (gui/initialize ch debug-model)
+    (reset! debug-model ["test 0" "test1"])
+    (go
+     (loop [[t p] (<! ch)]
+       (case t
+         :path-change (println "path-change" p)
+         :run (println "run")
+         :watching (println "watching" p)
+         (println "unknown type" t p))
+       (recur (<! ch)))))
+
   (let [p (cli/parse-opts args option-specs)]
     (when (:help (:options p))
       (println (:summary p))
@@ -82,4 +105,6 @@
               disable-watching (:disable-watching (:options p))]
           (start source-dir (or target-dir source-dir)
                  :disable-watching disable-watching))
-        (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]")))))
+        (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]"))))
+
+  )
