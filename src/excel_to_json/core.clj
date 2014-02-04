@@ -49,8 +49,7 @@
       (clojure.pprint/pprint (.getStackTrace e)))))
 
 (defn watch-callback [source-path target-path file-path]
-  (println "watch-callback" source-path target-path file-path)
-  (let [file (clojure.java.io/file source-path (.toString ^File file-path))]
+  (let [file (clojure.java.io/file source-path (.toString ^UnixPath file-path))]
     (when (is-xlsx? file)
       (watcher-print "Updating changed file...")
       (convert-and-save file target-path)
