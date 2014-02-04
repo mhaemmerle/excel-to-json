@@ -45,6 +45,9 @@
       (error-print (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
 
+;; add-watcher
+;; cancel-watcher
+
 (defn watch-callback [target-dir event filename]
   (let [file (clojure.java.io/file filename)]
     (when (is-xlsx? file)
@@ -52,8 +55,9 @@
       (convert-and-save file target-dir)
       (status-print "[done]"))))
 
-(defn start [source-dir target-dir & {:keys [disable-watching]}]
-  (watcher-print "Converting files in" source-dir "with output to" target-dir)
+;; (defn start [source-dir target-dir & {:keys [disable-watching]}]
+(defn start [source-dir target-dir]
+  ;; (watcher-print "Converting files in" source-dir "with output to" target-dir)
   (let [directory (clojure.java.io/file source-dir)
         xlsx-files (reduce (fn [acc ^File f]
                              (if (and (.isFile f) (is-xlsx? f))
@@ -61,50 +65,86 @@
                                acc)) [] (.listFiles directory))]
     (doseq [file xlsx-files]
       (convert-and-save file target-dir))
-    (status-print "[done]")
-    (when (not disable-watching)
-      (start-watch [{:path source-dir
-                     :event-types [:create :modify]
-                     :bootstrap (fn [path] (watcher-print "Starting to watch" path))
-                     :callback (partial watch-callback target-dir)
-                     :options {:recursive false}}]))))
+    ;; (status-print "[done]")
+    ;; (when (not disable-watching)
+    ;;   (start-watch [{:path source-dir
+    ;;                  :event-types [:create :modify]
+    ;;                  :bootstrap (fn [path] (watcher-print "Starting to watch" path))
+    ;;                  :callback (partial watch-callback target-dir)
+    ;;                  :options {:recursive false}}]))
+    ))
+
+(defn aw [source-dir target-dir]
+  (println source-dir target-dir)
+  (start-watch [{:path source-dir
+                 :event-types [:create :modify]
+                 :bootstrap (fn [path] (watcher-print "Starting to watch" path))
+                 :callback (partial watch-callback target-dir)
+                 :options {:recursive false}}]))
+
+(defn rw [watcher]
+  )
 
 (def option-specs
   [[nil "--disable-watching" "Disable watching" :default false :flag true]
    ["-h" "--help" "Show help" :default false :flag true]])
 
-;; source-dir
-;; target-dir
-;; watching-enabled?
-
 ;; be able to change watch target
 ;; re-run on directory-change
 
+(defn switch-watching [state enabled?]
+  (if enabled?
+    (if (and (not (:watcher state))
+             (every? #(not (nil? %)) (map state [:source-dir :target-dir])))
+      (do
+        (println "#1")
+        (let [w (aw (:source-dir state) (:target-dir state))]
+          (println "aw" aw)
+          (assoc state :watcher w)))
+      state)
+    (if-let [watcher (:watcher state)]
+      (do
+        (println "#2")
+        (rw watcher)
+        (dissoc state :watcher))
+      state)))
+
+;; use a multimethod
+(defn handle-event [state t payload]
+  (case t
+    :path-change (case (:type payload)
+                   :source (assoc state :source-dir (.getPath (:file payload)))
+                   :target (assoc state :target-dir (.getPath (:file payload))))
+    ;; :run state
+    :watching (switch-watching state payload)
+    (do
+      (println "unknown type:" t "with payload:" payload)
+      state)))
+
 (defn -main [& args]
-
-  (let [ch (chan)
-        debug-model (atom [])]
-    (gui/initialize ch debug-model)
-    (reset! debug-model ["test 0" "test1"])
+  (let [channel (chan)
+        log (atom [])
+        [_ source-dir target-dir] (gui/initialize channel log)
+        initial-state {:source-dir source-dir :target-dir target-dir}]
     (go
-     (loop [[t p] (<! ch)]
-       (case t
-         :path-change (println "path-change" p)
-         :run (println "run")
-         :watching (println "watching" p)
-         (println "unknown type" t p))
-       (recur (<! ch)))))
+     (loop [[type payload] (<! channel)
+            state initial-state]
+       (println "state" state "type" type "payload" payload)
+       (let [new-state (handle-event state type payload)]
+         (println "new-state" new-state)
+         (recur (<! channel)
+                new-state)))))
 
-  (let [p (cli/parse-opts args option-specs)]
-    (when (:help (:options p))
-      (println (:summary p))
-      (System/exit 0))
-    (let [arguments (:arguments p)]
-      (if (> (count arguments) 1)
-        (let [source-dir (first arguments) target-dir (second arguments)
-              disable-watching (:disable-watching (:options p))]
-          (start source-dir (or target-dir source-dir)
-                 :disable-watching disable-watching))
-        (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]"))))
+  ;; (let [p (cli/parse-opts args option-specs)]
+  ;;   (when (:help (:options p))
+  ;;     (println (:summary p))
+  ;;     (System/exit 0))
+  ;;   (let [arguments (:arguments p)]
+  ;;     (if (> (count arguments) 1)
+  ;;       (let [source-dir (first arguments) target-dir (second arguments)
+  ;;             disable-watching (:disable-watching (:options p))]
+  ;;         (start source-dir (or target-dir source-dir)
+  ;;                :disable-watching disable-watching))
+  ;;       (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]"))))
 
   )

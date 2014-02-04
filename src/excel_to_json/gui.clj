@@ -36,22 +36,9 @@
                     (put! ch [:path-change {:type tag :file file}])))]
     (sc/button :text "Choose" :action (sc/action :name "Open" :handler handler))))
 
-(defn item-renderer [renderer info]
-  (sc/config! renderer :text (:value info)))
-
-(defn create-log [model]
-  (let [listbox (sc/listbox :renderer item-renderer)]
-    (sb/bind model (sb/property listbox :model))
-    (doto (sc/scrollable listbox)
-      (.setBorder ,, (create-border)))))
-
-(defn create-header [ch]
-  (let [source-text (sc/text :id :source-text
-                             :text (get-preference :source-directory "")
-                             :editable? false)
-        target-text (sc/text :id :target-text
-                             :text (get-preference :target-directory "")
-                             :editable? false)]
+(defn create-header [ch source-dir target-dir]
+  (let [source-text (sc/text :id :source-text :text source-dir :editable? false)
+        target-text (sc/text :id :target-text :text target-dir :editable? false)]
     (sm/mig-panel
      :constraints ["wrap 3, insets 0"
                    "[shrink 0]10[200, grow, fill]10[shrink 0]"
@@ -63,6 +50,15 @@
              [target-text]
              [(get-select-button ch :target)]])))
 
+(defn item-renderer [renderer info]
+  (sc/config! renderer :text (:value info)))
+
+(defn create-log [model]
+  (let [listbox (sc/listbox :renderer item-renderer)]
+    (sb/bind model (sb/property listbox :model))
+    (doto (sc/scrollable listbox)
+      (.setBorder ,, (create-border)))))
+
 (defn create-convert-button [ch]
   (let [items [(sc/checkbox :text "Watch directory"
                             :selected? true
@@ -72,18 +68,20 @@
                           :listen [:action (fn [_] (put! ch [:run]))])]]
     (sc/horizontal-panel :items items)))
 
-(defn create-panel [ch log-model]
+(defn create-panel [channel source-dir target-dir log-model]
   (sc/border-panel :border 5 :vgap 5 :hgap 5
-                   :north (create-header ch)
+                   :north (create-header channel source-dir target-dir)
                    :center (create-log log-model)
-                   :south (create-convert-button ch)))
+                   :south (create-convert-button channel)))
 
-(defn initialize [ch log-model]
-  (let [frame (sc/frame :title "Excel > JSON"
+(defn initialize [channel log-model]
+  (let [source-dir (get-preference :source-directory)
+        target-dir (get-preference :target-directory)
+        frame (sc/frame :title "Excel > JSON"
                         :width 800
                         :height 600
                         :on-close :exit)
-        panel (create-panel ch log-model)]
+        panel (create-panel channel (or source-dir "") (or target-dir "") log-model)]
     (.add ^javax.swing.JFrame frame panel)
     (sc/invoke-later (sc/show! frame))
-    frame))
+    [frame source-dir target-dir]))
