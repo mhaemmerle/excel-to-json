@@ -4,7 +4,7 @@
                  [org.clojure/tools.cli "0.3.1"]
                  [cheshire "5.3.1"]
                  [myguidingstar/clansi "1.3.0"]
-                 [clojure-watch "0.1.9"]
+                 [fswatch "0.2.0-SNAPSHOT"]
                  [org.flatland/ordered "1.5.2"]
                  [clj-excel "0.0.1"]
                  [seesaw "1.4.4"]]

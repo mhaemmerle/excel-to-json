@@ -1,7 +1,7 @@
 (ns excel-to-json.core
   (:gen-class)
   (:require [cheshire.core :refer [generate-string]]
-            [clojure-watch.core :refer [start-watch]]
+            [fswatch.core :as fs]
             [clansi.core :refer [style]]
             [clojure.tools.cli :as cli]
             [excel-to-json.converter :as converter]
@@ -11,6 +11,8 @@
 
 (set! *warn-on-reflection* true)
 
+(def ^:dynamic *prn-fn* println)
+
 (defn text-timestamp []
   (let [c (java.util.Calendar/getInstance)
         f (java.text.SimpleDateFormat. "HH:mm:ss")]
@@ -19,13 +21,13 @@
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
 (defn watcher-print [& text]
-  (apply println (style (str (text-timestamp) " :: watcher :: ") :magenta) text))
+  (apply *prn-fn* (style (str (text-timestamp) " :: watcher :: ") :magenta) text))
 
 (defn error-print [& text]
-  (apply println (style "error :: " :red) text))
+  (apply *prn-fn* (style "error :: " :red) text))
 
 (defn status-print [text]
-  (println "    " (style text :green)))
+  (*prn-fn* "    " (style text :green)))
 
 (defn is-xlsx? [^File file]
   (re-matches #"^((?!~\$).)*.xlsx$" (.getName file)))
@@ -33,11 +35,11 @@
 (defn get-filename [^File file]
   (first (clojure.string/split (.getName file) #"\.")))
 
-(defn convert-and-save [^File file target-dir]
+(defn convert-and-save [^File file target-path]
   (try
     (let [file-path (.getPath file)]
       (doseq [[filename config] (converter/convert file-path)]
-        (let [output-file (str target-dir "/" filename ".json")
+        (let [output-file (str target-path "/" filename ".json")
               json-string (generate-string config {:pretty true})]
           (spit output-file json-string)
           (watcher-print "Converted" file-path "->" output-file))))
@@ -45,106 +47,98 @@
       (error-print (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
 
-;; add-watcher
-;; cancel-watcher
-
-(defn watch-callback [target-dir event filename]
-  (let [file (clojure.java.io/file filename)]
+(defn watch-callback [source-path target-path file-path]
+  (println "watch-callback" source-path target-path file-path)
+  (let [file (clojure.java.io/file source-path (.toString ^File file-path))]
     (when (is-xlsx? file)
       (watcher-print "Updating changed file...")
-      (convert-and-save file target-dir)
+      (convert-and-save file target-path)
       (status-print "[done]"))))
 
-;; (defn start [source-dir target-dir & {:keys [disable-watching]}]
-(defn start [source-dir target-dir]
-  ;; (watcher-print "Converting files in" source-dir "with output to" target-dir)
-  (let [directory (clojure.java.io/file source-dir)
+(defn run [{:keys [source-path target-path] :as state}]
+  (watcher-print "Converting files in" source-path "with output to" target-path)
+  (let [directory (clojure.java.io/file source-path)
         xlsx-files (reduce (fn [acc ^File f]
                              (if (and (.isFile f) (is-xlsx? f))
                                (conj acc f)
                                acc)) [] (.listFiles directory))]
     (doseq [file xlsx-files]
-      (convert-and-save file target-dir))
-    ;; (status-print "[done]")
-    ;; (when (not disable-watching)
-    ;;   (start-watch [{:path source-dir
-    ;;                  :event-types [:create :modify]
-    ;;                  :bootstrap (fn [path] (watcher-print "Starting to watch" path))
-    ;;                  :callback (partial watch-callback target-dir)
-    ;;                  :options {:recursive false}}]))
-    ))
+      (convert-and-save file target-path))
+    (status-print "[done]")
+    state))
 
-(defn aw [source-dir target-dir]
-  (println source-dir target-dir)
-  (start-watch [{:path source-dir
-                 :event-types [:create :modify]
-                 :bootstrap (fn [path] (watcher-print "Starting to watch" path))
-                 :callback (partial watch-callback target-dir)
-                 :options {:recursive false}}]))
+(defn stop-watching [state]
+  (if-let [path (:watched-path state)]
+    (do
+      (fs/unwatch-path path)
+      (dissoc state :watched-path))
+    state))
 
-(defn rw [watcher]
-  )
+(defn start-watching [{:keys [source-path target-path watched-path] :as state}]
+  (let [callback #(watch-callback source-path target-path %)
+        new-state (if (not (= watched-path source-path))
+                    (stop-watching state)
+                    state)]
+    (fs/watch-path source-path :create callback :modify callback)
+    (watcher-print "Starting to watch" source-path)
+    (assoc new-state :watched-path source-path)))
 
 (def option-specs
   [[nil "--disable-watching" "Disable watching" :default false :flag true]
    ["-h" "--help" "Show help" :default false :flag true]])
 
-;; be able to change watch target
 ;; re-run on directory-change
 
-(defn switch-watching [state enabled?]
+(defn switch-watching! [state enabled?]
   (if enabled?
-    (if (and (not (:watcher state))
-             (every? #(not (nil? %)) (map state [:source-dir :target-dir])))
-      (do
-        (println "#1")
-        (let [w (aw (:source-dir state) (:target-dir state))]
-          (println "aw" aw)
-          (assoc state :watcher w)))
+    (if (every? #(not (nil? %)) (map state [:source-path :target-path]))
+      (start-watching state)
       state)
-    (if-let [watcher (:watcher state)]
-      (do
-        (println "#2")
-        (rw watcher)
-        (dissoc state :watcher))
-      state)))
+    (stop-watching state)))
 
-;; use a multimethod
-(defn handle-event [state t payload]
-  (case t
-    :path-change (case (:type payload)
-                   :source (assoc state :source-dir (.getPath (:file payload)))
-                   :target (assoc state :target-dir (.getPath (:file payload))))
-    ;; :run state
-    :watching (switch-watching state payload)
-    (do
-      (println "unknown type:" t "with payload:" payload)
-      state)))
+(defmulti handle-event (fn [state [event-type payload]] event-type))
+
+(defmethod handle-event :path-change [state [event-type payload]]
+  (let [path (.getPath ^File (:file payload))]
+    (case (:type payload)
+      :source (assoc state :source-path path)
+      :target (assoc state :target-path path))))
+
+(defmethod handle-event :run [state _]
+  (run state))
+
+(defmethod handle-event :watching [state [event-type payload]]
+  (switch-watching! state payload))
+
+(defmethod handle-event :default [state [event-type payload]]
+  (*prn-fn* (format "Unknown event-type '%s'" event-type))
+  state)
 
 (defn -main [& args]
   (let [channel (chan)
         log (atom [])
-        [_ source-dir target-dir] (gui/initialize channel log)
-        initial-state {:source-dir source-dir :target-dir target-dir}]
-    (go
-     (loop [[type payload] (<! channel)
-            state initial-state]
-       (println "state" state "type" type "payload" payload)
-       (let [new-state (handle-event state type payload)]
-         (println "new-state" new-state)
-         (recur (<! channel)
-                new-state)))))
+        [_ source-path target-path] (gui/initialize channel log)
+        m {:source-path source-path :target-path target-path :watched-path source-path}]
+    (binding [*prn-fn* (fn [& args] (swap! log conj (apply str args)))]
+      (let [initial-state (switch-watching! m true)]
+        (go
+         (loop [event (<! channel)
+                state initial-state]
+           (let [new-state (handle-event state event)]
+             (recur (<! channel) new-state))))))))
 
-  ;; (let [p (cli/parse-opts args option-specs)]
-  ;;   (when (:help (:options p))
-  ;;     (println (:summary p))
-  ;;     (System/exit 0))
-  ;;   (let [arguments (:arguments p)]
-  ;;     (if (> (count arguments) 1)
-  ;;       (let [source-dir (first arguments) target-dir (second arguments)
-  ;;             disable-watching (:disable-watching (:options p))]
-  ;;         (start source-dir (or target-dir source-dir)
-  ;;                :disable-watching disable-watching))
-  ;;       (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]"))))
-
-  )
+;; (defn -main [& args]
+;;   (let [p (cli/parse-opts args option-specs)]
+;;     (when (:help (:options p))
+;;       (println (:summary p))
+;;       (System/exit 0))
+;;     (let [arguments (:arguments p)]
+;;       (if (> (count arguments) 1)
+;;         (let [source-path (first arguments) target-path (second arguments)
+;;               state {:source-path source-path :target-path
+;;                      (or target-path source-path)
+;;                      :watched-path source-path}]
+;;           (run state)
+;;           (when-not (:disable-watching (:options p))
+;;             (start-watch state)))
+;;         (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]")))))
