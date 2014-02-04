@@ -140,5 +140,5 @@
 ;;                      :watched-path source-path}]
 ;;           (run state)
 ;;           (when-not (:disable-watching (:options p))
-;;             (start-watch state)))
+;;             (start-watching state)))
 ;;         (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]")))))
