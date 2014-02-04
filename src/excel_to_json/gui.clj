@@ -78,8 +78,8 @@
   (let [source-dir (get-preference :source-directory)
         target-dir (get-preference :target-directory)
         frame (sc/frame :title "Excel > JSON"
-                        :width 800
-                        :height 600
+                        :width 1350
+                        :height 650
                         :on-close :exit)
         panel (create-panel channel (or source-dir "") (or target-dir "") log-model)]
     (.add ^javax.swing.JFrame frame panel)
