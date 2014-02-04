@@ -7,16 +7,17 @@
             [excel-to-json.converter :as converter]
             [excel-to-json.gui :as gui]
             [clojure.core.async :refer [go chan <! >! put!]])
-  (:import java.io.File))
+  (:import java.io.File
+           sun.nio.fs.UnixPath))
 
 (set! *warn-on-reflection* true)
 
 (def ^:dynamic *prn-fn* println)
 
 (defn text-timestamp []
-  (let [c (java.util.Calendar/getInstance)
-        f (java.text.SimpleDateFormat. "HH:mm:ss")]
-    (.format f (.getTime c))))
+  (let [calendar (java.util.Calendar/getInstance)
+        date-format (java.text.SimpleDateFormat. "HH:mm:ss")]
+    (.format date-format (.getTime calendar))))
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
 
