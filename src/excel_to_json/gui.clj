@@ -36,9 +36,9 @@
                     (put! ch [:path-change {:type tag :file file}])))]
     (sc/button :text "Choose" :action (sc/action :name "Open" :handler handler))))
 
-(defn create-header [ch source-dir target-dir]
-  (let [source-text (sc/text :id :source-text :text source-dir :editable? false)
-        target-text (sc/text :id :target-text :text target-dir :editable? false)]
+(defn create-header [ch source-path target-path]
+  (let [source-text (sc/text :id :source-text :text source-path :editable? false)
+        target-text (sc/text :id :target-text :text target-path :editable? false)]
     (sm/mig-panel
      :constraints ["wrap 3, insets 0"
                    "[shrink 0]10[200, grow, fill]10[shrink 0]"
@@ -68,20 +68,20 @@
                           :listen [:action (fn [_] (put! ch [:run]))])]]
     (sc/horizontal-panel :items items)))
 
-(defn create-panel [channel source-dir target-dir log-model]
+(defn create-panel [channel source-path target-path log-model]
   (sc/border-panel :border 5 :vgap 5 :hgap 5
-                   :north (create-header channel source-dir target-dir)
+                   :north (create-header channel source-path target-path)
                    :center (create-log log-model)
                    :south (create-convert-button channel)))
 
 (defn initialize [channel log-model]
-  (let [source-dir (get-preference :source-directory)
-        target-dir (get-preference :target-directory)
+  (let [source-path (get-preference :source-directory)
+        target-path (get-preference :target-directory)
         frame (sc/frame :title "Excel > JSON"
                         :width 1350
                         :height 650
                         :on-close :exit)
-        panel (create-panel channel (or source-dir "") (or target-dir "") log-model)]
+        panel (create-panel channel (or source-path "") (or target-path "") log-model)]
     (.add ^javax.swing.JFrame frame panel)
     (sc/invoke-later (sc/show! frame))
-    [frame source-dir target-dir]))
+    [frame source-path target-path]))
