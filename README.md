@@ -191,13 +191,23 @@ The column *traits* will be indexed by the values in that column, and the follow
 
 ## Extra Data
 
-Any extra data can be store in a sheet that is targeted for conversion to JSON. The only limitation is that the row must have its first cell empty. This means in effect, whenever a row does not have a cell that belongs to the main ID column (the first column), it will be ignored. Thus you can have empty rows, and rows that have extra data in all cells but the first.
+Extra data can be stored in a sheet that is exported to JSON. There are two ways to include this data:
 
-| id            | property_1       | property_2    |
-| ------------- | ---------------- | ------------- |
-| foo           | 123              | abc           |
-| bar           | 345              | def           |
-|               | will_be_ignored  | 1             |
+* Keep the first cell in a row empty.
+
+  This means that any row that does not have an primary key is ignored. This is also true for rows above the header row.
+
+* Keep the header in the header row empty.
+
+  If the header row is missing a header (except the first cell, which must be the primary key), the columns is ignored.
+
+In both cases, the other cells in the rows and columns can still contain data that can be included in formulas, it will just not be put into the JSON.
+
+| id   | property_1                 |                               | property_2    |
+| ---- | -------------------------- | ----------------------------- | ------------- |
+| foo  | 123                        | *this column will be ignored* | abc           |
+| bar  | 345                        | blah                          | def           |
+|      | *this row will be ignored* | blah                          | 1             |
 
 # Example
 

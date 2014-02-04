@@ -64,3 +64,11 @@
         expected [["test_empty_rows"
                    [{:value 1 :id "foo"} {:value 2 :id "bar"}]]]]
     (is (= expected configs))))
+
+(deftest empty-columns
+  (let [configs (convert "resources/test_empty_columns.xlsx")
+        expected [["test_empty_columns"
+                   [{:id "foo" :list [{:x 1}]}
+                    {:more "b" :id "bar" :list [{:x 2}]}]]]]
+    ()
+    (is (= expected configs))))
