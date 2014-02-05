@@ -11,7 +11,7 @@ This is a tool that converts Excel files of a certain structure to JSON files. I
 
 `SOURCEDIR` is a directory containing a number of Excel workbooks. `TARGETDIR` (optional) is the destination directory of the JSON files (defaults to `SOURCEDIR`). This will start the watcher which will print out progress as files are modified and scanned.
 
-The watcher can also be disabled via this command line flag.
+The watcher can also be disabled via this command line flag:
 
     $ lein run SOURCEDIR [TARGETDIR] --disable-watching
 
@@ -19,7 +19,7 @@ The watcher can also be disabled via this command line flag.
 
     $ lein run -m excel-to-json.gui
 
-To package the gui version into a selfcontained jar:
+To package the gui version into a self-contained jar:
 
     $ lein uberjar excel-to-json.gui
 
