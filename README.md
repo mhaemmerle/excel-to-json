@@ -4,6 +4,8 @@ This is a tool that converts Excel files of a certain structure to JSON files. I
 
 # Usage
 
+## Command line version
+
     $ lein deps
     $ lein run SOURCEDIR [TARGETDIR]
 
@@ -12,6 +14,14 @@ This is a tool that converts Excel files of a certain structure to JSON files. I
 The watcher can also be disabled via this command line flag.
 
     $ lein run SOURCEDIR [TARGETDIR] --disable-watching
+
+## GUI version
+
+    $ lein run -m excel-to-json.gui
+
+To package the gui version into a selfcontained jar:
+
+    $ lein uberjar excel-to-json.gui
 
 # Rules
 
