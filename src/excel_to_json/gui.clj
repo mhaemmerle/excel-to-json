@@ -30,29 +30,29 @@
 (defn create-border []
   (javax.swing.BorderFactory/createLineBorder java.awt.Color/BLACK))
 
-(defn get-select-button [ch tag]
+(defn get-select-button [channel tag]
   (let [text (keyword (str "#" (name tag) "-text"))
         handler (fn [event]
                   (when-let [file (sch/choose-file :type :open
                                                    :selection-mode :dirs-only)]
                     (sc/text! (sc/select (sc/to-root event) [text]) (.getPath file))
                     (put-preference (str (name tag) "-directory") (.getPath file))
-                    (put! ch [:path-change {:type tag :file file}])))]
-    (sc/button :text "Choose" :action (sc/action :name "Open" :handler handler))))
+                    (put! channel [:path-change {:type tag :file file}])))]
+    (sc/button :action (sc/action :name "Choose" :handler handler))))
 
-(defn create-header [ch source-path target-path]
-  (let [source-text (sc/text :id :source-text :text source-path)
-        target-text (sc/text :id :target-text :text target-path)]
+(defn create-header [channel source-path target-path]
+  (let [source-text (sc/text :id :source-text :text source-path :editable? false)
+        target-text (sc/text :id :target-text :text target-path :editable? false)]
     (sm/mig-panel
      :constraints ["wrap 3, insets 0"
                    "[shrink 0]10[200, grow, fill]10[shrink 0]"
                    "[shrink 0]5[]"]
      :items [["Source directory:"]
              [source-text]
-             [(get-select-button ch :source)]
+             [(get-select-button channel :source)]
              ["Target directory:"]
              [target-text]
-             [(get-select-button ch :target)]])))
+             [(get-select-button channel :target)]])))
 
 (defn item-renderer [renderer info]
   (sc/config! renderer :text (:value info)))
@@ -63,13 +63,13 @@
     (doto (sc/scrollable listbox)
       (.setBorder ,, (create-border)))))
 
-(defn create-convert-button [ch]
+(defn create-convert-button [channel]
   (let [items [(sc/checkbox :text "Watch directory"
                             :selected? true
-                            :listen [:action #(put! ch [:watching (sc/value %)])])
+                            :listen [:action #(put! channel [:watching (sc/value %)])])
                :fill-h
                (sc/button :text "Convert"
-                          :listen [:action (fn [_] (put! ch [:run]))])]]
+                          :listen [:action (fn [_] (put! channel [:run]))])]]
     (sc/horizontal-panel :items items)))
 
 (defn create-panel [channel source-path target-path log-model]
