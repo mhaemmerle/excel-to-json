@@ -41,8 +41,8 @@
     (sc/button :text "Choose" :action (sc/action :name "Open" :handler handler))))
 
 (defn create-header [ch source-path target-path]
-  (let [source-text (sc/text :id :source-text :text source-path :editable? false)
-        target-text (sc/text :id :target-text :text target-path :editable? false)]
+  (let [source-text (sc/text :id :source-text :text source-path)
+        target-text (sc/text :id :target-text :text target-path)]
     (sm/mig-panel
      :constraints ["wrap 3, insets 0"
                    "[shrink 0]10[200, grow, fill]10[shrink 0]"
