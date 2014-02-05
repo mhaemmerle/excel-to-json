@@ -24,24 +24,31 @@
           (catch Exception e
             value))))))
 
-(defn unpack-keys [column-names row]
-  (let [cv (vec column-names)
-        row-map (map (fn [cell]
-                       [(get cv (.getColumnIndex cell)) cell]) row)]
-    (reduce (fn [acc [header cell]]
-              (if (= (.getCellType cell) Cell/CELL_TYPE_BLANK)
-                acc
-                (assoc-in acc (split-keys header) (safe-value cell))))
-            (ordered-map) row-map)))
+(defn safe-key [cell]
+  (keyword (safe-value cell)))
+
+(defn is-blank? [cell]
+  (or (= (.getCellType cell) Cell/CELL_TYPE_BLANK)) (= (safe-value cell) ""))
+
+(defn with-index [cells]
+  (into {} (map (fn [c] [(.getColumnIndex c) c]) cells)))
+
+(defn unpack-keys [header row]
+  (let [indexed-header (with-index header)
+        indexed-row (with-index row)]
+    (reduce (fn [acc [i header]]
+              (let [cell (get indexed-row i)]
+                (if (or (is-blank? header) (nil? cell))
+                  acc
+                  (assoc-in acc (split-keys (safe-key header)) (safe-value cell)))))
+      (ordered-map) indexed-header)))
 
 (defn non-empty-rows [rows]
   (filter (fn [row] (= (.getColumnIndex (first row)) 0)) rows))
 
-(defn column-names-and-rows [sheet]
+(defn headers-and-rows [sheet]
   (let [rows (non-empty-rows sheet)]
-    (let [header-row (first rows)
-          column-names (map #(keyword (safe-value %)) header-row)]
-      [column-names (rest rows)])))
+    [(first rows) (rest rows)]))
 
 (defn ensure-ordered [m k]
   (if (nil? (k m)) (assoc m k (ordered-map)) m))
@@ -53,9 +60,9 @@
 
 (defn add-sheet-config [primary-key current-key sheets config]
   (reduce (fn [acc0 sheet]
-            (let [[column-names rows] (column-names-and-rows sheet)
-                  secondary-key (second column-names)
-                  unpacked-rows (map #(unpack-keys column-names %) rows)
+            (let [[headers rows] (headers-and-rows sheet)
+                  secondary-key (safe-key (second headers))
+                  unpacked-rows (map #(unpack-keys headers %) rows)
                   grouped-rows (group-by primary-key unpacked-rows)
                   secondary-config (get grouped-rows (name current-key))]
               ;; TODO remove either primary or current key
@@ -82,10 +89,10 @@
                {} workbook)))
 
 (defn parse-sheets [sheets]
-  (let [[column-names rows] (column-names-and-rows (first sheets))
-        primary-key (first column-names)]
+  (let [[headers rows] (headers-and-rows (first sheets))
+        primary-key (safe-key (first headers))]
     (doall (for [row rows]
-             (let [config (unpack-keys column-names row)
+             (let [config (unpack-keys headers row)
                    current-key (keyword (get config primary-key))]
                (add-sheet-config primary-key current-key (rest sheets) config))))))
 
