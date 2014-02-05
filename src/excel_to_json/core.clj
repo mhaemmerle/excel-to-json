@@ -55,7 +55,7 @@
       (status-print "[done]"))))
 
 (defn run [{:keys [source-path target-path] :as state}]
-  (watcher-print "Converting files in" source-path "with output to" target-path)
+  (watcher-print (format "Converting files from '%s' to '%s'" source-path target-path))
   (let [directory (clojure.java.io/file source-path)
         xlsx-files (reduce (fn [acc ^File f]
                              (if (and (.isFile f) (is-xlsx? f))
@@ -79,7 +79,7 @@
                     (stop-watching state)
                     state)]
     (fs/watch-path source-path :create callback :modify callback)
-    (watcher-print "Starting to watch" source-path)
+    (watcher-print (format "Starting to watch '%s'" source-path))
     (assoc new-state :watched-path source-path)))
 
 (def option-specs
@@ -110,7 +110,7 @@
   (switch-watching! state payload))
 
 (defmethod handle-event :default [state [event-type payload]]
-  (*prn-fn* (format "Unknown event-type '%s'" event-type))
+  (error-print (format "Unknown event-type '%s'" event-type))
   state)
 
 (defn -main [& args]
