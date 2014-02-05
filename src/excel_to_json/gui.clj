@@ -31,7 +31,8 @@
 (defn get-select-button [ch tag]
   (let [text (keyword (str "#" (name tag) "-text"))
         handler (fn [event]
-                  (when-let [file (sch/choose-file :type "Select" :selection-mode :dirs-only)]
+                  (when-let [file (sch/choose-file :type "Select"
+                                                   :selection-mode :dirs-only)]
                     (sc/text! (sc/select (sc/to-root event) [text]) (.getPath file))
                     (put-preference (str (name tag) "-directory") (.getPath file))
                     (put! ch [:path-change {:type tag :file file}])))]
