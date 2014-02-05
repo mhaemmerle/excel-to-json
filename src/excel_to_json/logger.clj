@@ -23,7 +23,7 @@
 (deftype StoreLogger [store]
   Logger
   (info [this text]
-    (swap! store conj (str (text-timestamp) text)))
+    (swap! store conj (str (text-timestamp) " " text)))
   (error [this text]
     (swap! store conj (str "error :: " text)))
   (status [this text]
