@@ -1,33 +1,20 @@
 (ns excel-to-json.core
   (:gen-class)
-  (:require [cheshire.core :refer [generate-string]]
+  (:require [clojure.core.async :refer [go chan <! >! put!]]
+            [cheshire.core :refer [generate-string]]
             [fswatch.core :as fs]
-            [clansi.core :refer [style]]
             [clojure.tools.cli :as cli]
             [excel-to-json.converter :as converter]
-            [clojure.core.async :refer [go chan <! >! put!]])
+            [excel-to-json.logger :as log])
   (:import java.io.File
-           sun.nio.fs.UnixPath))
+           sun.nio.fs.UnixPath
+           [excel_to_json.logger PrintLogger]))
 
 (set! *warn-on-reflection* true)
 
-(def ^:dynamic *prn-fn* println)
-
-(defn text-timestamp []
-  (let [calendar (java.util.Calendar/getInstance)
-        date-format (java.text.SimpleDateFormat. "HH:mm:ss")]
-    (.format date-format (.getTime calendar))))
+(def ^:dynamic *logger* (PrintLogger.))
 
 ;; 'watching' taken from https://github.com/ibdknox/cljs-watch/
-
-(defn watcher-print [& text]
-  (apply *prn-fn* (style (str (text-timestamp) " :: watcher :: ") :magenta) text))
-
-(defn error-print [& text]
-  (apply *prn-fn* (style "error :: " :red) text))
-
-(defn status-print [text]
-  (*prn-fn* "    " (style text :green)))
 
 (defn is-xlsx? [^File file]
   (re-matches #"^((?!~\$).)*.xlsx$" (.getName file)))
@@ -42,20 +29,21 @@
         (let [output-file (str target-path "/" filename ".json")
               json-string (generate-string config {:pretty true})]
           (spit output-file json-string)
-          (watcher-print "Converted" file-path "->" output-file))))
+          (log/info *logger* (str "Converted" file-path "->" output-file)))))
     (catch Exception e
-      (error-print (str "Converting" file "failed with: " e "\n"))
+      (log/error *logger* (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
 
 (defn watch-callback [source-path target-path file-path]
   (let [file (clojure.java.io/file source-path (.toString ^UnixPath file-path))]
     (when (is-xlsx? file)
-      (watcher-print "Updating changed file...")
+      (log/info *logger* "Updating changed file...")
       (convert-and-save file target-path)
-      (status-print "[done]"))))
+      (log/status *logger* "[done]"))))
 
 (defn run [{:keys [source-path target-path] :as state}]
-  (watcher-print (format "Converting files from '%s' to '%s'" source-path target-path))
+  (log/info *logger* (format "Converting files from '%s' to '%s'"
+                             source-path target-path))
   (let [directory (clojure.java.io/file source-path)
         xlsx-files (reduce (fn [acc ^File f]
                              (if (and (.isFile f) (is-xlsx? f))
@@ -63,7 +51,7 @@
                                acc)) [] (.listFiles directory))]
     (doseq [file xlsx-files]
       (convert-and-save file target-path))
-    (status-print "[done]")
+    (log/status *logger* "[done]")
     state))
 
 (defn stop-watching [state]
@@ -79,7 +67,7 @@
                     (stop-watching state)
                     state)]
     (fs/watch-path source-path :create callback :modify callback)
-    (watcher-print (format "Starting to watch '%s'" source-path))
+    (log/info *logger* (format "Starting to watch '%s'" source-path))
     (assoc new-state :watched-path source-path)))
 
 (def option-specs
@@ -110,7 +98,7 @@
   (switch-watching! state payload))
 
 (defmethod handle-event :default [state [event-type payload]]
-  (error-print (format "Unknown event-type '%s'" event-type))
+  (log/error *logger* (format "Unknown event-type '%s'" event-type))
   state)
 
 (defn -main [& args]

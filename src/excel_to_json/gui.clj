@@ -5,7 +5,8 @@
             [seesaw.mig :as sm]
             [excel-to-json.core :as c]
             [clojure.core.async :refer [go chan <! >! put!]])
-  (:import java.util.prefs.Preferences))
+  (:import java.util.prefs.Preferences
+           [excel_to_json.logger StoreLogger]))
 
 ;; TODO button for applying source -> target
 
@@ -93,7 +94,7 @@
         log (atom [])
         [_ source-path target-path] (initialize channel log)
         m {:source-path source-path :target-path target-path :watched-path source-path}]
-    (binding [*prn-fn* (fn [& args] (swap! log conj (apply str args)))]
+    (binding [c/*logger* (StoreLogger. log)]
       (let [initial-state (c/switch-watching! m true)]
         (go
          (loop [event (<! channel)
