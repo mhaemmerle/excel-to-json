@@ -1,11 +1,11 @@
 (ns excel-to-json.gui
   (:gen-class)
-  (:require [seesaw.core :as sc]
+  (:require [clojure.core.async :refer [go chan <! >! put!]]
+            [seesaw.core :as sc]
             [seesaw.bind :as sb]
             [seesaw.chooser :as sch]
             [seesaw.mig :as sm]
-            [excel-to-json.core :as c]
-            [clojure.core.async :refer [go chan <! >! put!]])
+            [excel-to-json.core :as c])
   (:import java.util.prefs.Preferences
            [excel_to_json.logger StoreLogger]))
 
