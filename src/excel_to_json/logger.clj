@@ -20,11 +20,14 @@
   (status [this text]
     (println "    " (style text :green))))
 
+(defn add-line! [store line]
+  (swap! store conj line))
+
 (deftype StoreLogger [store]
   Logger
   (info [this text]
-    (swap! store conj (str (text-timestamp) " " text)))
+    (add-line! store (str (text-timestamp) " " text)))
   (error [this text]
-    (swap! store conj (str "error :: " text)))
+    (add-line! store (str "error :: " text)))
   (status [this text]
-    (swap! store conj (str "    " text))))
+    (add-line! store (str "    " text))))
