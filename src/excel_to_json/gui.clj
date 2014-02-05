@@ -1,4 +1,5 @@
 (ns excel-to-json.gui
+  (:gen-class)
   (:require [seesaw.core :as sc]
             [seesaw.bind :as sb]
             [seesaw.chooser :as sch]
