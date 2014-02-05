@@ -38,13 +38,19 @@
         indexed-row (with-index row)]
     (reduce (fn [acc [i header]]
               (let [cell (get indexed-row i)]
-                (if (or (is-blank? header) (nil? cell))
+                (if (or (is-blank? header) (nil? cell) (is-blank? cell))
                   acc
                   (assoc-in acc (split-keys (safe-key header)) (safe-value cell)))))
       (ordered-map) indexed-header)))
 
 (defn non-empty-rows [rows]
-  (filter (fn [row] (= (.getColumnIndex (first row)) 0)) rows))
+  (filter
+    (fn [row]
+      (let [cell (first row)]
+        (and
+          (= (.getColumnIndex cell) 0)
+          (not (is-blank? cell)))))
+    rows))
 
 (defn headers-and-rows [sheet]
   (let [rows (non-empty-rows sheet)]
