@@ -59,6 +59,13 @@
                      :id "foo"}]]]]
     (is (= expected configs))))
 
+(deftest ignore-formatting
+  (let [configs (convert "resources/test_formatted_cells.xlsx")
+        expected [["test_formatted_cells"
+                   [{:id "foo" :map {:a {:value 1}}}
+                    {:id "bar" }]]]]
+    (is (= expected configs))))
+
 (deftest empty-rows
   (let [configs (convert "resources/test_empty_rows.xlsx")
         expected [["test_empty_rows"
