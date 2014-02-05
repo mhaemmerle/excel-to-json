@@ -3029,43 +3029,19 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
 </script><title>excel-to-json -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">excel-to-json</h1><h2 class="project-version">0.1.0-SNAPSHOT</h2><br />
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.5.1</td></tr><tr><td class="dep-name">org.clojure/tools.cli</td><td class="dotted"><hr /></td><td class="dep-version">0.2.2</td></tr><tr><td class="dep-name">cheshire</td><td class="dotted"><hr /></td><td class="dep-version">4.0.3</td></tr><tr><td class="dep-name">myguidingstar/clansi</td><td class="dotted"><hr /></td><td class="dep-version">1.3.0</td></tr><tr><td class="dep-name">clojure-watch</td><td class="dotted"><hr /></td><td class="dep-version">0.1.9</td></tr><tr><td class="dep-name">org.flatland/ordered</td><td class="dotted"><hr /></td><td class="dep-version">1.5.1</td></tr><tr><td class="dep-name">clj-excel</td><td class="dotted"><hr /></td><td class="dep-version">0.0.1</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#excel-to-json.core">excel-to-json.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#excel-to-json.core" name="excel-to-json.core"><h1 class="project-name">excel-to-json.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(ns excel-to-json.core
-  (:gen-class)
-  (:require [cheshire.core :refer [generate-string]]
-            [clojure-watch.core :refer [start-watch]]
-            [clansi.core :refer [style]]
-            [flatland.ordered.map :refer [ordered-map]]
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.5.1</td></tr><tr><td class="dep-name">org.clojure/core.async</td><td class="dotted"><hr /></td><td class="dep-version">0.1.267.0-0d7780-alpha</td></tr><tr><td class="dep-name">org.clojure/tools.cli</td><td class="dotted"><hr /></td><td class="dep-version">0.3.1</td></tr><tr><td class="dep-name">cheshire</td><td class="dotted"><hr /></td><td class="dep-version">5.3.1</td></tr><tr><td class="dep-name">myguidingstar/clansi</td><td class="dotted"><hr /></td><td class="dep-version">1.3.0</td></tr><tr><td class="dep-name">fswatch</td><td class="dotted"><hr /></td><td class="dep-version">0.2.0-SNAPSHOT</td></tr><tr><td class="dep-name">org.flatland/ordered</td><td class="dotted"><hr /></td><td class="dep-version">1.5.2</td></tr><tr><td class="dep-name">clj-excel</td><td class="dotted"><hr /></td><td class="dep-version">0.0.1</td></tr><tr><td class="dep-name">seesaw</td><td class="dotted"><hr /></td><td class="dep-version">1.4.4</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#excel-to-json.converter">excel-to-json.converter</a></li><li><a href="#excel-to-json.core">excel-to-json.core</a></li><li><a href="#excel-to-json.gui">excel-to-json.gui</a></li><li><a href="#excel-to-json.logger">excel-to-json.logger</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#excel-to-json.converter" name="excel-to-json.converter"><h1 class="project-name">excel-to-json.converter</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns excel-to-json.converter
+  (:require [flatland.ordered.map :refer [ordered-map]]
             [clj-excel.core :as ce])
-  (:import org.apache.poi.ss.usermodel.DataFormatter))</pre></td></tr><tr><td class="docs"><p>'watching' taken from https://github.com/ibdknox/cljs-watch/</p>
-</td><td class="codes"></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(def default-primary-key :id)
-(def ^:dynamic *evaluator*)</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn text-timestamp
-  []
-  (let [c (java.util.Calendar/getInstance)
-        f (java.text.SimpleDateFormat. &quot;HH:mm:ss&quot;)]
-    (.format f (.getTime c))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn watcher-print
-  [&amp; text]
-  (apply println (style (str (text-timestamp) &quot; :: watcher :: &quot;) :magenta) text))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn error-print
-  [&amp; text]
-  (apply println (style &quot;error :: &quot; :red) text))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn status-print
-  [text]
-  (println &quot;    &quot; (style text :green)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn split-keys
-  [k]
+  (:import [org.apache.poi.ss.usermodel DataFormatter Cell]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(def ^:dynamic *evaluator*)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn split-keys [k]
   (map keyword (clojure.string/split (name k) #&quot;\.&quot;)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn safe-keyword
-  [k]
+</td><td class="codes"><pre class="brush: clojure">(defn safe-keyword [k]
   (keyword (str (if (instance? Number k) (long k) k))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn apply-format
-  [cell]
+</td><td class="codes"><pre class="brush: clojure">(defn apply-format [cell]
   (.formatCellValue (DataFormatter.) cell *evaluator*))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn safe-value
-  [cell]
+</td><td class="codes"><pre class="brush: clojure">(defn safe-value [cell]
   (let [value (apply-format cell)]
     (try
       (. Integer parseInt value)
@@ -3074,26 +3050,43 @@ net.brehaut.ClojureTools = (function (SH) {
           (. Float parseFloat value)
           (catch Exception e
             value))))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn unpack-keys
-  [column-names row]
-  (reduce (fn [acc [header cell]]
-            (assoc-in acc (split-keys header) (safe-value cell)))
-          (ordered-map)
-          (zipmap column-names row)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn column-names-and-rows
-  [sheet]
-  (let [header-row (first sheet)
-        column-names (map #(keyword (safe-value %)) header-row)]
-    [column-names (rest sheet)]))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn ensure-ordered
-  [m k]
+</td><td class="codes"><pre class="brush: clojure">(defn safe-key [cell]
+  (keyword (safe-value cell)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn is-blank? [cell]
+  (or (= (.getCellType cell) Cell/CELL_TYPE_BLANK)) (= (safe-value cell) ))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn with-index [cells]
+  (into {} (map (fn [c] [(.getColumnIndex c) c]) cells)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn unpack-keys [header row]
+  (let [indexed-header (with-index header)
+        indexed-row (with-index row)]
+    (reduce (fn [acc [i header]]
+              (let [cell (get indexed-row i)]
+                (if (or (is-blank? header) (nil? cell) (is-blank? cell))
+                  acc
+                  (assoc-in acc (split-keys (safe-key header)) (safe-value cell)))))
+      (ordered-map) indexed-header)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn non-empty-rows [rows]
+  (filter
+    (fn [row]
+      (let [cell (first row)]
+        (and
+          (= (.getColumnIndex cell) 0)
+          (not (is-blank? cell)))))
+    rows))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn headers-and-rows [sheet]
+  (let [rows (non-empty-rows sheet)]
+    [(first rows) (rest rows)]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn ensure-ordered [m k]
   (if (nil? (k m)) (assoc m k (ordered-map)) m))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn add-sheet-config
-  [primary-key current-key sheets config]
+</td><td class="codes"><pre class="brush: clojure">(defn blank? [value]
+  (cond
+   (integer? value) false
+   :else (clojure.string/blank? value)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn add-sheet-config [primary-key current-key sheets config]
   (reduce (fn [acc0 sheet]
-            (let [[column-names rows] (column-names-and-rows sheet)
-                  secondary-key (second column-names)
-                  unpacked-rows (map #(unpack-keys column-names %) rows)
+            (let [[headers rows] (headers-and-rows sheet)
+                  secondary-key (safe-key (second headers))
+                  unpacked-rows (map #(unpack-keys headers %) rows)
                   grouped-rows (group-by primary-key unpacked-rows)
                   secondary-config (get grouped-rows (name current-key))]
               ;; TODO remove either primary or current key
@@ -3103,85 +3096,245 @@ net.brehaut.ClojureTools = (function (SH) {
                               sub (dissoc row primary-key secondary-key)]
                           (if (empty? sub)
                             acc
-                            (if (nil? nested-key)
+                            (if (blank? nested-key)
                               (update-in acc [secondary-key] conj sub)
                               (assoc-in (ensure-ordered acc secondary-key)
                                         [secondary-key safe-nested-key] sub)))))
                       acc0 secondary-config)))
           config sheets))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn filename-from-sheet
-  [sheet]
+</td><td class="codes"><pre class="brush: clojure">(defn filename-from-sheet [sheet]
   (nth (re-find #&quot;^(.*)\.json(#.*)?$&quot; (.getSheetName sheet)) 1))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn group-sheets
-  [workbook]
+</td><td class="codes"><pre class="brush: clojure">(defn group-sheets [workbook]
   (seq (reduce (fn [acc sheet]
                  (if-let [filename (filename-from-sheet sheet)]
                    (update-in acc [filename] (fnil conj []) sheet) acc))
                {} workbook)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn parse-sheets
-  [sheets]
-  (clojure.pprint/pprint sheets)
-  (let [[column-names rows] (column-names-and-rows (first sheets))
-        primary-key (first column-names)]
+</td><td class="codes"><pre class="brush: clojure">(defn parse-sheets [sheets]
+  (let [[headers rows] (headers-and-rows (first sheets))
+        primary-key (safe-key (first headers))]
     (doall (for [row rows]
-      (let [config (unpack-keys column-names row)
-            current-key (keyword (get config primary-key))]
-        (add-sheet-config primary-key current-key (rest sheets) config))))))</pre></td></tr><tr><td class="docs"><p>TODO primary-key should come from sheet-group</p>
-</td><td class="codes"><pre class="brush: clojure">(defn parse-workbook
-  [workbook primary-key]
+             (let [config (unpack-keys headers row)
+                   current-key (keyword (get config primary-key))]
+               (add-sheet-config primary-key current-key (rest sheets) config))))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn parse-workbook [workbook]
   (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
     (doall (for [[name sheets] (group-sheets workbook)]
              [name (parse-sheets sheets)]))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn is-xlsx?
-  [file]
+</td><td class="codes"><pre class="brush: clojure">(defn convert [file-path]
+  (parse-workbook (ce/workbook-xssf file-path)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#excel-to-json.core" name="excel-to-json.core"><h1 class="project-name">excel-to-json.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns excel-to-json.core
+  (:gen-class)
+  (:require [clojure.core.async :refer [go chan &lt;! &gt;! put!]]
+            [cheshire.core :refer [generate-string]]
+            [fswatch.core :as fs]
+            [clojure.tools.cli :as cli]
+            [excel-to-json.converter :as converter]
+            [excel-to-json.logger :as log])
+  (:import java.io.File
+           sun.nio.fs.UnixPath
+           [excel_to_json.logger PrintLogger]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(set! *warn-on-reflection* true)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(def ^:dynamic *logger* (PrintLogger.))</pre></td></tr><tr><td class="docs"><p>'watching' taken from https://github.com/ibdknox/cljs-watch/</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn is-xlsx? [^File file]
   (re-matches #&quot;^((?!~\$).)*.xlsx$&quot; (.getName file)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn get-filename
-  [file]
+</td><td class="codes"><pre class="brush: clojure">(defn get-filename [^File file]
   (first (clojure.string/split (.getName file) #&quot;\.&quot;)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn open-workbook
-  [file-path]
-  (ce/workbook-xssf file-path))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn convert-and-save
-  [file target-dir]
+</td><td class="codes"><pre class="brush: clojure">(defn convert-and-save [^File file target-path]
   (try
-    (let [file-path (.getPath file)
-          workbook (open-workbook file-path)]
-      (let [parsed-configs (parse-workbook workbook default-primary-key)]
-        (doseq [[filename config] parsed-configs]
-          (let [output-file (str target-dir &quot;/&quot; filename &quot;.json&quot;)
-                json-string (generate-string config {:pretty true})]
-            (spit output-file json-string)
-            (watcher-print &quot;Converted&quot; file-path &quot;-&gt;&quot; output-file)))))
+    (let [file-path (.getPath file)]
+      (doseq [[filename config] (converter/convert file-path)]
+        (let [output-file (str target-path &quot;/&quot; filename &quot;.json&quot;)
+              json-string (generate-string config {:pretty true})]
+          (spit output-file json-string)
+          (log/info *logger* (str &quot;Converted&quot; file-path &quot;-&gt;&quot; output-file)))))
     (catch Exception e
-      (error-print (str &quot;Converting&quot; file &quot;failed with: &quot; e &quot;\n&quot;))
+      (log/error *logger* (str &quot;Converting&quot; file &quot;failed with: &quot; e &quot;\n&quot;))
       (clojure.pprint/pprint (.getStackTrace e)))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn watch-callback
-  [target-dir event filename]
-  (let [file (clojure.java.io/file filename)]
+</td><td class="codes"><pre class="brush: clojure">(defn watch-callback [source-path target-path file-path]
+  (let [file (clojure.java.io/file source-path (.toString ^UnixPath file-path))]
     (when (is-xlsx? file)
-      (watcher-print &quot;Updating changed file...&quot;)
-      (convert-and-save file target-dir)
-      (status-print &quot;[done]&quot;))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn start
-  [source-dir target-dir]
-  (watcher-print &quot;Converting files in&quot; source-dir &quot;with output to&quot; target-dir)
-  (let [directory (clojure.java.io/file source-dir)
-        xlsx-files (reduce (fn [acc f]
+      (log/info *logger* &quot;Updating changed file...&quot;)
+      (convert-and-save file target-path)
+      (log/status *logger* &quot;[done]&quot;))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn run [{:keys [source-path target-path] :as state}]
+  (log/info *logger* (format &quot;Converting files from '%s' to '%s'&quot;
+                             source-path target-path))
+  (let [directory (clojure.java.io/file source-path)
+        xlsx-files (reduce (fn [acc ^File f]
                              (if (and (.isFile f) (is-xlsx? f))
                                (conj acc f)
                                acc)) [] (.listFiles directory))]
     (doseq [file xlsx-files]
-      (convert-and-save file target-dir))
-    (status-print &quot;[done]&quot;)
-    (start-watch [{:path source-dir
-                   :event-types [:create :modify]
-                   :bootstrap (fn [path] (watcher-print &quot;Starting to watch&quot; path))
-                   :callback (partial watch-callback target-dir)
-                   :options {:recursive false}}])))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn -main
-  [&amp; args]
-  (if (seq args)
-    (let [source-dir (first args) target-dir (second args)]
-      (start source-dir (or target-dir source-dir)))
-    (watcher-print &quot;Usage: excel-to-json SOURCEDIR [TARGETDIR]\n&quot;)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+      (convert-and-save file target-path))
+    (log/status *logger* &quot;[done]&quot;)
+    state))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn stop-watching [state]
+  (if-let [path (:watched-path state)]
+    (do
+      (fs/unwatch-path path)
+      (dissoc state :watched-path))
+    state))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn start-watching [{:keys [source-path target-path watched-path] :as state}]
+  (let [callback #(watch-callback source-path target-path %)
+        new-state (if (not (= watched-path source-path))
+                    (stop-watching state)
+                    state)]
+    (fs/watch-path source-path :create callback :modify callback)
+    (log/info *logger* (format &quot;Starting to watch '%s'&quot; source-path))
+    (assoc new-state :watched-path source-path)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(def option-specs
+  [[nil &quot;--disable-watching&quot; &quot;Disable watching&quot; :default false :flag true]
+   [&quot;-h&quot; &quot;--help&quot; &quot;Show help&quot; :default false :flag true]])</pre></td></tr><tr><td class="docs"><p>re-run on directory-change</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn switch-watching! [state enabled?]
+  (if enabled?
+    (if (every? #(not (nil? %)) (map state [:source-path :target-path]))
+      (start-watching state)
+      state)
+    (stop-watching state)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmulti handle-event (fn [state [event-type payload]] event-type))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod handle-event :path-change [state [event-type payload]]
+  (let [path (.getPath ^File (:file payload))]
+    (case (:type payload)
+      :source (assoc state :source-path path)
+      :target (assoc state :target-path path))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod handle-event :run [state _]
+  (run state))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod handle-event :watching [state [event-type payload]]
+  (switch-watching! state payload))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod handle-event :default [state [event-type payload]]
+  (log/error *logger* (format &quot;Unknown event-type '%s'&quot; event-type))
+  state)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn -main [&amp; args]
+  (let [parsed-options (cli/parse-opts args option-specs)]
+    (when (:help (:options parsed-options))
+      (println (:summary parsed-options))
+      (System/exit 0))
+    (let [arguments (:arguments parsed-options)]
+      (if (&gt; (count arguments) 1)
+        (let [source-path (first arguments) target-path (second arguments)
+              state {:source-path source-path :target-path
+                     (or target-path source-path)
+                     :watched-path source-path}]
+          (run state)
+          (when-not (:disable-watching (:options parsed-options))
+            (start-watching state)
+            nil))
+        (println &quot;Usage: excel-to-json SOURCEDIR [TARGETDIR]&quot;)))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#excel-to-json.gui" name="excel-to-json.gui"><h1 class="project-name">excel-to-json.gui</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns excel-to-json.gui
+  (:gen-class)
+  (:require [seesaw.core :as sc]
+            [seesaw.bind :as sb]
+            [seesaw.chooser :as sch]
+            [seesaw.mig :as sm]
+            [excel-to-json.core :as c]
+            [clojure.core.async :refer [go chan &lt;! &gt;! put!]])
+  (:import java.util.prefs.Preferences
+           [excel_to_json.logger StoreLogger]))</pre></td></tr><tr><td class="docs"><p>TODO button for applying source -> target</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(sc/native!)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn preferences-node [path-name]
+  (.node (Preferences/userRoot) path-name))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(def ^:dynamic *preferences* (preferences-node &quot;excel-to-json&quot;))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn get-preference
+  ([key]
+     (get-preference key nil))
+  ([key default-value]
+     (.get *preferences* (name key) default-value)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn put-preference [key value]
+  (.put *preferences* key value))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-border []
+  (javax.swing.BorderFactory/createLineBorder java.awt.Color/BLACK))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn get-select-button [ch tag]
+  (let [text (keyword (str &quot;#&quot; (name tag) &quot;-text&quot;))
+        handler (fn [event]
+                  (when-let [file (sch/choose-file :type &quot;Select&quot;
+                                                   :selection-mode :dirs-only)]
+                    (sc/text! (sc/select (sc/to-root event) [text]) (.getPath file))
+                    (put-preference (str (name tag) &quot;-directory&quot;) (.getPath file))
+                    (put! ch [:path-change {:type tag :file file}])))]
+    (sc/button :text &quot;Choose&quot; :action (sc/action :name &quot;Open&quot; :handler handler))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-header [ch source-path target-path]
+  (let [source-text (sc/text :id :source-text :text source-path :editable? false)
+        target-text (sc/text :id :target-text :text target-path :editable? false)]
+    (sm/mig-panel
+     :constraints [&quot;wrap 3, insets 0&quot;
+                   &quot;[shrink 0]10[200, grow, fill]10[shrink 0]&quot;
+                   &quot;[shrink 0]5[]&quot;]
+     :items [[&quot;Source directory:&quot;]
+             [source-text]
+             [(get-select-button ch :source)]
+             [&quot;Target directory:&quot;]
+             [target-text]
+             [(get-select-button ch :target)]])))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn item-renderer [renderer info]
+  (sc/config! renderer :text (:value info)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-log [model]
+  (let [listbox (sc/listbox :renderer item-renderer)]
+    (sb/bind model (sb/property listbox :model))
+    (doto (sc/scrollable listbox)
+      (.setBorder ,, (create-border)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-convert-button [ch]
+  (let [items [(sc/checkbox :text &quot;Watch directory&quot;
+                            :selected? true
+                            :listen [:action #(put! ch [:watching (sc/value %)])])
+               :fill-h
+               (sc/button :text &quot;Convert&quot;
+                          :listen [:action (fn [_] (put! ch [:run]))])]]
+    (sc/horizontal-panel :items items)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-panel [channel source-path target-path log-model]
+  (sc/border-panel :border 5 :vgap 5 :hgap 5
+                   :north (create-header channel source-path target-path)
+                   :center (create-log log-model)
+                   :south (create-convert-button channel)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn initialize [channel log-model]
+  (let [source-path (get-preference :source-directory)
+        target-path (get-preference :target-directory)
+        frame (sc/frame :title &quot;Excel &gt; JSON&quot;
+                        :width 1350
+                        :height 650
+                        :on-close :exit)
+        panel (create-panel channel (or source-path ) (or target-path ) log-model)]
+    (.add ^javax.swing.JFrame frame panel)
+    (sc/invoke-later (sc/show! frame))
+    [frame source-path target-path]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn -main [&amp; args]
+  (let [channel (chan)
+        log (atom [])
+        [_ source-path target-path] (initialize channel log)
+        m {:source-path source-path :target-path target-path :watched-path source-path}]
+    (binding [c/*logger* (StoreLogger. log)]
+      (let [initial-state (c/switch-watching! m true)]
+        (go
+         (loop [event (&lt;! channel)
+                state initial-state]
+           (let [new-state (c/handle-event state event)]
+             (recur (&lt;! channel) new-state))))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#excel-to-json.logger" name="excel-to-json.logger"><h1 class="project-name">excel-to-json.logger</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns excel-to-json.logger
+  (:require [clansi.core :refer [style]]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn text-timestamp []
+  (let [calendar (java.util.Calendar/getInstance)
+        date-format (java.text.SimpleDateFormat. &quot;HH:mm:ss&quot;)]
+    (.format date-format (.getTime calendar))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defprotocol Logger
+  (info [this msg])
+  (error [this msg])
+  (status [this msg]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(deftype PrintLogger []
+  Logger
+  (info [this text]
+    (println (style (str (text-timestamp) &quot; :: watcher :: &quot;) :magenta) text))
+  (error [this text]
+    (println (style &quot;error :: &quot; :red) text))
+  (status [this text]
+    (println &quot;    &quot; (style text :green))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(deftype StoreLogger [store]
+  Logger
+  (info [this text]
+    (swap! store conj (str (text-timestamp) text)))
+  (error [this text]
+    (swap! store conj (str &quot;error :: &quot; text)))
+  (status [this text]
+    (swap! store conj (str &quot;    &quot; text))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
