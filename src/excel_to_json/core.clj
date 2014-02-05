@@ -5,7 +5,6 @@
             [clansi.core :refer [style]]
             [clojure.tools.cli :as cli]
             [excel-to-json.converter :as converter]
-            [excel-to-json.gui :as gui]
             [clojure.core.async :refer [go chan <! >! put!]])
   (:import java.io.File
            sun.nio.fs.UnixPath))
@@ -115,30 +114,18 @@
   state)
 
 (defn -main [& args]
-  (let [channel (chan)
-        log (atom [])
-        [_ source-path target-path] (gui/initialize channel log)
-        m {:source-path source-path :target-path target-path :watched-path source-path}]
-    (binding [*prn-fn* (fn [& args] (swap! log conj (apply str args)))]
-      (let [initial-state (switch-watching! m true)]
-        (go
-         (loop [event (<! channel)
-                state initial-state]
-           (let [new-state (handle-event state event)]
-             (recur (<! channel) new-state))))))))
-
-;; (defn -main [& args]
-;;   (let [p (cli/parse-opts args option-specs)]
-;;     (when (:help (:options p))
-;;       (println (:summary p))
-;;       (System/exit 0))
-;;     (let [arguments (:arguments p)]
-;;       (if (> (count arguments) 1)
-;;         (let [source-path (first arguments) target-path (second arguments)
-;;               state {:source-path source-path :target-path
-;;                      (or target-path source-path)
-;;                      :watched-path source-path}]
-;;           (run state)
-;;           (when-not (:disable-watching (:options p))
-;;             (start-watching state)))
-;;         (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]")))))
+  (let [parsed-options (cli/parse-opts args option-specs)]
+    (when (:help (:options parsed-options))
+      (println (:summary parsed-options))
+      (System/exit 0))
+    (let [arguments (:arguments parsed-options)]
+      (if (> (count arguments) 1)
+        (let [source-path (first arguments) target-path (second arguments)
+              state {:source-path source-path :target-path
+                     (or target-path source-path)
+                     :watched-path source-path}]
+          (run state)
+          (when-not (:disable-watching (:options parsed-options))
+            (start-watching state)
+            nil))
+        (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]")))))

@@ -3,7 +3,8 @@
             [seesaw.bind :as sb]
             [seesaw.chooser :as sch]
             [seesaw.mig :as sm]
-            [clojure.core.async :refer [put!]])
+            [excel-to-json.core :as c]
+            [clojure.core.async :refer [go chan <! >! put!]])
   (:import java.util.prefs.Preferences))
 
 ;; TODO button for applying source -> target
@@ -85,3 +86,16 @@
     (.add ^javax.swing.JFrame frame panel)
     (sc/invoke-later (sc/show! frame))
     [frame source-path target-path]))
+
+(defn -main [& args]
+  (let [channel (chan)
+        log (atom [])
+        [_ source-path target-path] (initialize channel log)
+        m {:source-path source-path :target-path target-path :watched-path source-path}]
+    (binding [*prn-fn* (fn [& args] (swap! log conj (apply str args)))]
+      (let [initial-state (c/switch-watching! m true)]
+        (go
+         (loop [event (<! channel)
+                state initial-state]
+           (let [new-state (c/handle-event state event)]
+             (recur (<! channel) new-state))))))))
