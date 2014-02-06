@@ -10,7 +10,7 @@
                   ["test"
                    [{:id "foo"
                      :property_1 600
-                     :property_2 "abc"
+                     :property_2 true
                      :traits
                      {:1
                       {:property_a "a"
@@ -30,7 +30,7 @@
                       {:prop_a "baz_1" :prop_b 100}]}
                     {:id "bar"
                      :property_1 900
-                     :property_2 "def"
+                     :property_2 false
                      :traits
                      {:1
                       {:property_a "d"

@@ -22,7 +22,10 @@
         (try
           (. Float parseFloat value)
           (catch Exception e
-            value))))))
+            (case (clojure.string/lower-case value)
+              "true" true
+              "false" false
+              value)))))))
 
 (defn safe-key [cell]
   (keyword (safe-value cell)))
