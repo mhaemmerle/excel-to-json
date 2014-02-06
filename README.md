@@ -25,6 +25,22 @@ To package the gui version into a self-contained jar:
 
 # Rules
 
+## Data Types
+
+The following data types for values are supported:
+
+* **Number**
+
+  If the value of the cell parses as an integer or float, it is converted to a JSON number. Integers are generated without decimals and floats with decimals, but in JSON they are the same type.
+
+* **Boolean**
+
+  Values that are either `"true"` or `"false"` (case insensitive) are converted to boolean.
+
+* **String**
+
+  Any other string value is kept as a string.
+
 ## Sheet Rules
 
 The Excel workbook has to follow a few rules to be parsable. Only sheets names ending with ".json" will be converted to JSON files. The name of the JSON file will be the same as the the sheet name. Thus, a workbook containing three sheets, *Example.json*, *Numbers* and *Data.json* will only produce two files, `Example.json` and `Data.json`.
