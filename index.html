@@ -3049,7 +3049,10 @@ net.brehaut.ClojureTools = (function (SH) {
         (try
           (. Float parseFloat value)
           (catch Exception e
-            value))))))</pre></td></tr><tr><td class="docs">
+            (case (clojure.string/lower-case value)
+              &quot;true&quot; true
+              &quot;false&quot; false
+              value)))))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn safe-key [cell]
   (keyword (safe-value cell)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn is-blank? [cell]
@@ -3224,12 +3227,12 @@ net.brehaut.ClojureTools = (function (SH) {
         (println &quot;Usage: excel-to-json SOURCEDIR [TARGETDIR]&quot;)))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#excel-to-json.gui" name="excel-to-json.gui"><h1 class="project-name">excel-to-json.gui</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns excel-to-json.gui
   (:gen-class)
-  (:require [seesaw.core :as sc]
+  (:require [clojure.core.async :refer [go chan &lt;! &gt;! put!]]
+            [seesaw.core :as sc]
             [seesaw.bind :as sb]
             [seesaw.chooser :as sch]
             [seesaw.mig :as sm]
-            [excel-to-json.core :as c]
-            [clojure.core.async :refer [go chan &lt;! &gt;! put!]])
+            [excel-to-json.core :as c])
   (:import java.util.prefs.Preferences
            [excel_to_json.logger StoreLogger]))</pre></td></tr><tr><td class="docs"><p>TODO button for applying source -> target</p>
 </td><td class="codes"></td></tr><tr><td class="docs">
@@ -3246,16 +3249,16 @@ net.brehaut.ClojureTools = (function (SH) {
   (.put *preferences* key value))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn create-border []
   (javax.swing.BorderFactory/createLineBorder java.awt.Color/BLACK))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn get-select-button [ch tag]
+</td><td class="codes"><pre class="brush: clojure">(defn get-select-button [channel tag]
   (let [text (keyword (str &quot;#&quot; (name tag) &quot;-text&quot;))
         handler (fn [event]
-                  (when-let [file (sch/choose-file :type &quot;Select&quot;
+                  (when-let [file (sch/choose-file :type :open
                                                    :selection-mode :dirs-only)]
                     (sc/text! (sc/select (sc/to-root event) [text]) (.getPath file))
                     (put-preference (str (name tag) &quot;-directory&quot;) (.getPath file))
-                    (put! ch [:path-change {:type tag :file file}])))]
-    (sc/button :text &quot;Choose&quot; :action (sc/action :name &quot;Open&quot; :handler handler))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn create-header [ch source-path target-path]
+                    (put! channel [:path-change {:type tag :file file}])))]
+    (sc/button :action (sc/action :name &quot;Choose&quot; :handler handler))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn create-header [channel source-path target-path]
   (let [source-text (sc/text :id :source-text :text source-path :editable? false)
         target-text (sc/text :id :target-text :text target-path :editable? false)]
     (sm/mig-panel
@@ -3264,10 +3267,10 @@ net.brehaut.ClojureTools = (function (SH) {
                    &quot;[shrink 0]5[]&quot;]
      :items [[&quot;Source directory:&quot;]
              [source-text]
-             [(get-select-button ch :source)]
+             [(get-select-button channel :source)]
              [&quot;Target directory:&quot;]
              [target-text]
-             [(get-select-button ch :target)]])))</pre></td></tr><tr><td class="docs">
+             [(get-select-button channel :target)]])))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn item-renderer [renderer info]
   (sc/config! renderer :text (:value info)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn create-log [model]
@@ -3275,13 +3278,13 @@ net.brehaut.ClojureTools = (function (SH) {
     (sb/bind model (sb/property listbox :model))
     (doto (sc/scrollable listbox)
       (.setBorder ,, (create-border)))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn create-convert-button [ch]
+</td><td class="codes"><pre class="brush: clojure">(defn create-convert-button [channel]
   (let [items [(sc/checkbox :text &quot;Watch directory&quot;
                             :selected? true
-                            :listen [:action #(put! ch [:watching (sc/value %)])])
+                            :listen [:action #(put! channel [:watching (sc/value %)])])
                :fill-h
                (sc/button :text &quot;Convert&quot;
-                          :listen [:action (fn [_] (put! ch [:run]))])]]
+                          :listen [:action (fn [_] (put! channel [:run]))])]]
     (sc/horizontal-panel :items items)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn create-panel [channel source-path target-path log-model]
   (sc/border-panel :border 5 :vgap 5 :hgap 5
@@ -3329,12 +3332,14 @@ net.brehaut.ClojureTools = (function (SH) {
     (println (style &quot;error :: &quot; :red) text))
   (status [this text]
     (println &quot;    &quot; (style text :green))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn add-line! [store line]
+  (swap! store conj line))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(deftype StoreLogger [store]
   Logger
   (info [this text]
-    (swap! store conj (str (text-timestamp) text)))
+    (add-line! store (str (text-timestamp) &quot; &quot; text)))
   (error [this text]
-    (swap! store conj (str &quot;error :: &quot; text)))
+    (add-line! store (str &quot;error :: &quot; text)))
   (status [this text]
-    (swap! store conj (str &quot;    &quot; text))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+    (add-line! store (str &quot;    &quot; text))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
