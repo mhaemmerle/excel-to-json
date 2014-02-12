@@ -28,7 +28,7 @@
         (let [output-file (str target-path "/" filename ".json")
               json-string (generate-string config {:pretty true})]
           (spit output-file json-string)
-          (log/info *logger* (str "Converted" file-path "->" output-file)))))
+          (log/info *logger* (str "Converted " file-path "->" output-file)))))
     (catch Exception e
       (log/error *logger* (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
