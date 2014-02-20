@@ -7,7 +7,6 @@
             [excel-to-json.converter :as converter]
             [excel-to-json.logger :as log])
   (:import java.io.File
-           sun.nio.fs.UnixPath
            [excel_to_json.logger PrintLogger]))
 
 (set! *warn-on-reflection* true)
@@ -35,7 +34,7 @@
       (clojure.pprint/pprint (.getStackTrace e)))))
 
 (defn watch-callback [source-path target-path file-path]
-  (let [file (clojure.java.io/file source-path (.toString ^UnixPath file-path))]
+  (let [file (clojure.java.io/file source-path file-path)]
     (when (is-xlsx? file)
       (log/info *logger* "Updating changed file...")
       (convert-and-save file target-path)
