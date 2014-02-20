@@ -41,6 +41,10 @@ The following data types for values are supported:
 
   Any other string value is kept as a string.
 
+### Arrays
+
+Data types can also exist inside an array. In that case, every item in the array will be treated as its individual data type. For example, the array `a,2,true` will convert to `["a", 2, true]`.
+
 ## Sheet Rules
 
 The Excel workbook has to follow a few rules to be parsable. Only sheets names ending with ".json" will be converted to JSON files. The name of the JSON file will be the same as the the sheet name. Thus, a workbook containing three sheets, *Example.json*, *Numbers* and *Data.json* will only produce two files, `Example.json` and `Data.json`.
@@ -69,6 +73,37 @@ Will produce `Example.json` containing:
     "id": "bar",
     "property_1": 345,
     "property_2": "def"
+  }
+]
+```
+
+### Arrays
+
+Arrays in cells are achieved by annotating the column name with a `@` in the end. An optional splitting character can be appended, but `,` is the default.
+
+Individual values are trimmed (leading and trailing space removed) and empty values are discarded.
+
+*Example.json* (Sheet 1)
+
+| id            | prop_a@          | prop_b@;      |
+| ------------- | ---------------- | ------------- |
+| foo           | a,,  2 ,true     | ;test;  data  |
+
+This sheet will generate `Example.json` containing:
+
+```json
+[
+  {
+    "id": "foo",
+    "prop_a": [
+      "a",
+      2,
+      true
+    ],
+    "prop_b": [
+      "test",
+      "data"
+    ]
   }
 ]
 ```

@@ -79,3 +79,11 @@
                     {:more "b" :id "bar" :list [{:x 2}]}]]]]
     ()
     (is (= expected configs))))
+
+(deftest convert-array-annotation
+  (let [configs (convert "resources/test_array_annotation.xlsx")
+        expected [["test_array"
+                   [{:properties [{:prop ["foo," true 2 "bar," "baz"]}]
+                     :value [1 2 3]
+                     :id "foo"}]]]]
+    (is (= expected configs))))
