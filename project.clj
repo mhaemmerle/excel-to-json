@@ -7,6 +7,7 @@
                  [fswatch "0.2.0-SNAPSHOT"]
                  [org.flatland/ordered "1.5.2"]
                  [clj-excel "0.0.1"]
-                 [seesaw "1.4.4"]]
+                 [seesaw "1.4.4"]
+                 [org.clojure/core.match "0.2.1"]]
   :plugins [[lein-marginalia "0.7.1"]]
   :main excel-to-json.core)

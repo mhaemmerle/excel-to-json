@@ -1,6 +1,7 @@
 (ns excel-to-json.converter
   (:require [flatland.ordered.map :refer [ordered-map]]
-            [clj-excel.core :as ce])
+            [clj-excel.core :as ce]
+            [clojure.core.match :refer [match]])
   (:import [org.apache.poi.ss.usermodel DataFormatter Cell]))
 
 (def ^:dynamic *evaluator*)
@@ -14,27 +15,47 @@
 (defn apply-format [cell]
   (.formatCellValue (DataFormatter.) cell *evaluator*))
 
-(defn safe-value [cell]
-  (let [value (apply-format cell)]
-    (try
-      (. Integer parseInt value)
-      (catch Exception e
-        (try
-          (. Float parseFloat value)
-          (catch Exception e
-            (case (clojure.string/lower-case value)
-              "true" true
-              "false" false
-              value)))))))
+(defn convert-value [value]
+  (try
+    (. Integer parseInt value)
+    (catch Exception e
+      (try
+        (. Float parseFloat value)
+        (catch Exception e
+          (case (clojure.string/lower-case value)
+            "true" true
+            "false" false
+            value))))))
 
-(defn safe-key [cell]
-  (keyword (safe-value cell)))
+(defn convert-cell [cell]
+  (convert-value (apply-format cell)))
+
+(defn convert-header [cell]
+  (keyword (convert-cell cell)))
 
 (defn is-blank? [cell]
-  (or (= (.getCellType cell) Cell/CELL_TYPE_BLANK)) (= (safe-value cell) ""))
+  (or (= (.getCellType cell) Cell/CELL_TYPE_BLANK)) (= (convert-cell cell) ""))
 
 (defn with-index [cells]
   (into {} (map (fn [c] [(.getColumnIndex c) c]) cells)))
+
+(defn split-array [array-char cell]
+  (->>
+    (clojure.string/split (apply-format cell) (re-pattern array-char))
+    (map clojure.string/trim)
+    (remove empty?)
+    (map convert-value)))
+
+(defn parse-column-normal [header cell]
+  [(split-keys (convert-header header)) (convert-cell cell)])
+
+(defn parse-column-array [key-path array-char cell]
+  [(split-keys key-path) (split-array (or array-char ",") cell)])
+
+(defn parse-column [header cell]
+  (match (re-find #"(.*)@(.)?" (apply-format header))
+    nil (parse-column-normal header cell)
+    [_ key-path array-char] (parse-column-array key-path array-char cell)))
 
 (defn unpack-keys [header row]
   (let [indexed-header (with-index header)
@@ -43,7 +64,8 @@
               (let [cell (get indexed-row i)]
                 (if (or (is-blank? header) (nil? cell) (is-blank? cell))
                   acc
-                  (assoc-in acc (split-keys (safe-key header)) (safe-value cell)))))
+                  (let [[key-path value] (parse-column header cell)]
+                    (assoc-in acc key-path value)))))
       (ordered-map) indexed-header)))
 
 (defn non-empty-rows [rows]
@@ -70,7 +92,7 @@
 (defn add-sheet-config [primary-key current-key sheets config]
   (reduce (fn [acc0 sheet]
             (let [[headers rows] (headers-and-rows sheet)
-                  secondary-key (safe-key (second headers))
+                  secondary-key (convert-header (second headers))
                   unpacked-rows (map #(unpack-keys headers %) rows)
                   grouped-rows (group-by primary-key unpacked-rows)
                   secondary-config (get grouped-rows (name current-key))]
@@ -99,7 +121,7 @@
 
 (defn parse-sheets [sheets]
   (let [[headers rows] (headers-and-rows (first sheets))
-        primary-key (safe-key (first headers))]
+        primary-key (convert-header (first headers))]
     (doall (for [row rows]
              (let [config (unpack-keys headers row)
                    current-key (keyword (get config primary-key))]
