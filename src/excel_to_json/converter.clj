@@ -6,6 +6,8 @@
 
 (def ^:dynamic *evaluator*)
 
+(def data-formatter (DataFormatter.))
+
 (defn split-keys [k]
   (map keyword (clojure.string/split (name k) #"\.")))
 
@@ -13,19 +15,32 @@
   (keyword (str (if (instance? Number k) (long k) k))))
 
 (defn apply-format [cell]
-  (.formatCellValue (DataFormatter.) cell *evaluator*))
+  (.formatCellValue ^DataFormatter data-formatter cell *evaluator*))
+
+(defn convert-string [value type]
+  (case type
+    :integer (. Integer parseInt value)
+    :float (. Float parseFloat value)
+    :string (case (clojure.string/lower-case value)
+              "true" true
+              "false" false
+              value)))
 
 (defn convert-value [value]
-  (try
-    (. Integer parseInt value)
-    (catch Exception e
-      (try
-        (. Float parseFloat value)
-        (catch Exception e
-          (case (clojure.string/lower-case value)
-            "true" true
-            "false" false
-            value))))))
+  (let [numbers #{\0 \1 \2 \3 \4 \5 \6 \7 \8 \9}]
+    (loop [chars (seq value)
+           type :integer]
+      (let [c (first chars)
+            r (rest chars)
+            new-type (cond
+                       (and (contains? numbers c) (= type :integer)) :integer
+                       (and (contains? numbers c) (= type :float)) :float
+                       (and (= c \.) (not (= type :float))) :float
+                       :else :string)]
+        (cond
+          (= new-type :string) (convert-string value new-type)
+          (= (count r) 0) (convert-string value new-type)
+          :else (recur r new-type))))))
 
 (defn convert-cell [cell]
   (convert-value (apply-format cell)))
