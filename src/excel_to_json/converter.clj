@@ -6,6 +6,8 @@
 
 (def ^:dynamic *evaluator*)
 
+(def data-formatter (DataFormatter.))
+
 (defn split-keys [k]
   (map keyword (clojure.string/split (name k) #"\.")))
 
@@ -13,7 +15,7 @@
   (keyword (str (if (instance? Number k) (long k) k))))
 
 (defn apply-format [cell]
-  (.formatCellValue (DataFormatter.) cell *evaluator*))
+  (.formatCellValue ^DataFormatter data-formatter cell *evaluator*))
 
 (defn convert-string [value type]
   (case type
