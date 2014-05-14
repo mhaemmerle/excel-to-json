@@ -2,7 +2,7 @@
   (:require [flatland.ordered.map :refer [ordered-map]]
             [clj-excel.core :as ce]
             [clojure.core.match :refer [match]])
-  (:import [org.apache.poi.ss.usermodel DataFormatter Cell]))
+  (:import [org.apache.poi.ss.usermodel DataFormatter Cell Workbook CreationHelper]))
 
 (def ^:dynamic *evaluator*)
 
@@ -34,10 +34,10 @@
   (keyword (convert-cell cell)))
 
 (defn is-blank? [cell]
-  (or (= (.getCellType cell) Cell/CELL_TYPE_BLANK)) (= (convert-cell cell) ""))
+  (or (= (.getCellType ^Cell cell) Cell/CELL_TYPE_BLANK)) (= (convert-cell cell) ""))
 
 (defn with-index [cells]
-  (into {} (map (fn [c] [(.getColumnIndex c) c]) cells)))
+  (into {} (map (fn [c] [(.getColumnIndex ^Cell c) c]) cells)))
 
 (defn split-array [array-char cell]
   (->>
@@ -73,7 +73,7 @@
     (fn [row]
       (let [cell (first row)]
         (and
-          (= (.getColumnIndex cell) 0)
+          (= (.getColumnIndex ^Cell cell) 0)
           (not (is-blank? cell)))))
     rows))
 
@@ -111,7 +111,8 @@
           config sheets))
 
 (defn filename-from-sheet [sheet]
-  (nth (re-find #"^(.*)\.json(#.*)?$" (.getSheetName sheet)) 1))
+  (let [sheet-name (.getSheetName sheet)]
+    (nth (re-find #"^(.*)\.json(#.*)?$" sheet-name) 1)))
 
 (defn group-sheets [workbook]
   (seq (reduce (fn [acc sheet]
@@ -128,7 +129,8 @@
                (add-sheet-config primary-key current-key (rest sheets) config))))))
 
 (defn parse-workbook [workbook]
-  (binding [*evaluator* (.createFormulaEvaluator (.getCreationHelper workbook))]
+  (binding [*evaluator* (.createFormulaEvaluator
+                         (.getCreationHelper ^Workbook workbook))]
     (doall (for [[name sheets] (group-sheets workbook)]
              [name (parse-sheets sheets)]))))
 
