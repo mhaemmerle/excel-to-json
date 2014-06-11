@@ -17,30 +17,15 @@
 (defn apply-format [cell]
   (.formatCellValue ^DataFormatter data-formatter cell *evaluator*))
 
-(defn convert-string [value type]
-  (case type
-    :integer (. Integer parseInt value)
-    :float (. Float parseFloat value)
-    :string (case (clojure.string/lower-case value)
-              "true" true
-              "false" false
-              value)))
-
 (defn convert-value [value]
-  (let [numbers #{\0 \1 \2 \3 \4 \5 \6 \7 \8 \9}]
-    (loop [chars (seq value)
-           type :integer]
-      (let [c (first chars)
-            r (rest chars)
-            new-type (cond
-                       (and (contains? numbers c) (= type :integer)) :integer
-                       (and (contains? numbers c) (= type :float)) :float
-                       (and (= c \.) (not (= type :float))) :float
-                       :else :string)]
-        (cond
-          (= new-type :string) (convert-string value new-type)
-          (= (count r) 0) (convert-string value new-type)
-          :else (recur r new-type))))))
+  (if-let [result (re-find #"^([-+]?[0-9]+)(\.[0-9]+)?$" value)]
+    (if (last result)
+      (. Float parseFloat value)
+      (. Integer parseInt value))
+    (case (clojure.string/lower-case value)
+                  "true" true
+                  "false" false
+                  value)))
 
 (defn convert-cell [cell]
   (convert-value (apply-format cell)))
