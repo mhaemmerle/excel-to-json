@@ -110,17 +110,28 @@
                       acc0 secondary-config)))
           config sheets))
 
-(defn filename-from-sheet [sheet]
-  (let [sheet-name (.getSheetName sheet)]
-    (nth (re-find #"^(.*)\.json(#.*)?$" sheet-name) 1)))
+(defn name-and-type-from-sheet [sheet]
+  (let [sheet-name (.getSheetName sheet)
+        result (rest (re-find #"^(.*)\.json(?:(#|@)?.*)$" sheet-name))
+        json-name (first result)
+        tag (last result)]
+    (if json-name [json-name (case tag "@" 'single-object 'normal)] nil)))
 
 (defn group-sheets [workbook]
   (seq (reduce (fn [acc sheet]
-                 (if-let [filename (filename-from-sheet sheet)]
-                   (update-in acc [filename] (fnil conj []) sheet) acc))
+                 (if-let [[filename type] (name-and-type-from-sheet sheet)]
+                   (update-in acc [[filename type]] (fnil conj []) sheet) acc))
                {} workbook)))
 
-(defn parse-sheets [sheets]
+(defn parse-single-object [sheets]
+  (let [sheet (first sheets)
+        [_headers rows] (headers-and-rows sheet)]
+    (reduce (fn [acc row]
+              (let [[key-path value] (parse-column (first row) (second row))]
+                (assoc-in acc key-path value)))
+            {} rows)))
+
+(defn parse-normal [sheets]
   (let [[headers rows] (headers-and-rows (first sheets))
         primary-key (convert-header (first headers))]
     (doall (for [row rows]
@@ -131,8 +142,10 @@
 (defn parse-workbook [workbook]
   (binding [*evaluator* (.createFormulaEvaluator
                          (.getCreationHelper ^Workbook workbook))]
-    (doall (for [[name sheets] (group-sheets workbook)]
-             [name (parse-sheets sheets)]))))
+    (doall (for [[[json-name type] sheets] (group-sheets workbook)]
+             [json-name (case type
+                          single-object (parse-single-object sheets)
+                          normal (parse-normal sheets))]))))
 
 (defn convert [file-path]
   (parse-workbook (ce/workbook-xssf file-path)))

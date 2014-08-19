@@ -250,6 +250,41 @@ The column *traits* will be indexed by the values in that column, and the follow
 ]
 ```
 
+### Single Object Sheet
+
+The tool interprets any sheet with a trailing `@` character in the name as a
+single JSON object. Only one sheet with the same file name can exist. It is not
+possible to have any text after the `@` character in the sheet name.
+
+A single object sheet consists of two columns, keys and values. Parsing
+generates one JSON object that is the sole contents of the final JSON file.
+Keys are of the same data format as the column headers in normal sheets. Value
+cells obey the rules in the same way as in normal sheets.
+
+A header row **must** exist in a single object sheet. The header row **must**
+have a value in the first cell (the tool counts all rows without values in the
+first cell as extra data and ignores them).
+
+*global.json@* (Sheet 1)
+
+| *ignored*     | *ignored* |
+| ------------- | --------- |
+| foo           | 1         |
+| bar.baz       | test      |
+| bar.qux@      | a,b       |
+
+This sheet will generate `global.json` containing:
+
+```json
+{
+  "foo": 1,
+  "bar": {
+    "baz": "test",
+    "qux": ["a", "b"]
+  }
+}
+```
+
 ## Extra Data
 
 Extra data can be stored in a sheet that is exported to JSON. There are two ways to include this data:

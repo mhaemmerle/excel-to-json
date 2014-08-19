@@ -4,7 +4,8 @@
 
 (deftest convert-all
   (let [configs (convert "resources/test.xlsx")
-        expected [["foo"
+        expected [["bar" {:id 1 :foo {:baz "x" :bar "y"} :array [1,2,3]}]
+                  ["foo"
                    [{:name "baz" :value "sun" :prop_a "baz_1"}
                     {:name "qux" :value "moon" :prop_a "baz_3"}]]
                   ["test"
@@ -86,4 +87,10 @@
                    [{:properties [{:prop ["foo," true 2 "bar," "baz"]}]
                      :value [1 2 3]
                      :id "foo"}]]]]
+    (is (= expected configs))))
+
+(deftest sparse-sheet
+  (let [configs (convert "resources/test_sparse_sheet.xlsx")
+        expected [["test_sparse"
+                   {:id 1 :foo {:baz "x" :bar "y"} :array [1,2,3]}]]]
     (is (= expected configs))))
