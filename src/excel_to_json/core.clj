@@ -140,4 +140,6 @@
           (when-not (:disable-watching (:options parsed-options))
             (start-watching state)
             nil))
-        (println "Usage: excel-to-json [SOURCEDIR|SOURCEFILE] [TARGETDIR]")))))
+        (do
+          (println "Usage: excel-to-json SOURCE [TARGETDIR]")
+          (println "       SOURCE can be either a directory or a single file."))))))
