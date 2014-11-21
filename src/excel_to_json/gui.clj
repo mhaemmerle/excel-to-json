@@ -6,8 +6,7 @@
             [seesaw.chooser :as sch]
             [seesaw.mig :as sm]
             [excel-to-json.core :as c])
-  (:import java.util.prefs.Preferences
-           [excel_to_json.logger StoreLogger]))
+  (:import java.util.prefs.Preferences [excel_to_json.logger StoreLogger]))
 
 ;; TODO button for applying source -> target
 

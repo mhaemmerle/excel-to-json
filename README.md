@@ -7,13 +7,13 @@ This is a tool that converts Excel files of a certain structure to JSON files. I
 ## Command line version
 
     $ lein deps
-    $ lein run SOURCEDIR [TARGETDIR]
+    $ lein run SOURCE [TARGETDIR]
 
-`SOURCEDIR` is a directory containing a number of Excel workbooks. `TARGETDIR` (optional) is the destination directory of the JSON files (defaults to `SOURCEDIR`). This will start the watcher which will print out progress as files are modified and scanned.
+Where `SOURCE` stands either for a directory containing any number of Excel workbooks or a specific Excel workbook; both can be specified either as a relative or absolute path. `TARGETDIR` (optional) is the destination directory of the JSON files (defaults to `SOURCE`). This will start the watcher which will print out progress as files are modified and scanned.
 
 The watcher can also be disabled via this command line flag:
 
-    $ lein run SOURCEDIR [TARGETDIR] --disable-watching
+    $ lein run SOURCE [TARGETDIR] --disable-watching
 
 ## GUI version
 

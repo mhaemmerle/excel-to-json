@@ -6,8 +6,8 @@
             [clojure.tools.cli :as cli]
             [excel-to-json.converter :as converter]
             [excel-to-json.logger :as log])
-  (:import java.io.File
-           [excel_to_json.logger PrintLogger]))
+  (:import java.io.File [excel_to_json.logger PrintLogger]
+           java.nio.file.Path))
 
 (set! *warn-on-reflection* true)
 
@@ -33,21 +33,32 @@
       (log/error *logger* (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
 
-(defn watch-callback [source-path target-path file-path]
-  (let [file (clojure.java.io/file source-path file-path)]
+(defn watch-callback [source-path source-file target-path ^Path file-path]
+  (let [f (.getPath ^File (.toFile file-path))
+        file (try
+               (clojure.java.io/file source-path f)
+               (catch Exception e
+                 (log/error *logger* e)))
+        a1 (if (nil? source-file) nil
+               (.getAbsolutePath ^File source-file))
+        a2 (.getAbsolutePath ^File file)]
     (when (is-xlsx? file)
-      (log/info *logger* "Updating changed file...")
-      (convert-and-save file target-path)
-      (log/status *logger* "[done]"))))
+      (when (or (nil? source-file)
+                (= a1 a2))
+        (log/info *logger* "Updating changed file...")
+        (convert-and-save file target-path)
+        (log/status *logger* "[done]")))))
 
-(defn run [{:keys [source-path target-path] :as state}]
+(defn run [{:keys [source-path source-file target-path] :as state}]
   (log/info *logger* (format "Converting files from '%s' to '%s'"
                              source-path target-path))
   (let [directory (clojure.java.io/file source-path)
-        xlsx-files (reduce (fn [acc ^File f]
-                             (if (and (.isFile f) (is-xlsx? f))
-                               (conj acc f)
-                               acc)) [] (.listFiles directory))]
+        xlsx-files (if (nil? source-file)
+                     (reduce (fn [acc ^File f]
+                               (if (and (.isFile f) (is-xlsx? f))
+                                 (conj acc f)
+                                 acc)) [] (.listFiles directory))
+                     [source-file])]
     (doseq [file xlsx-files]
       (convert-and-save file target-path))
     (log/status *logger* "[done]")
@@ -60,8 +71,9 @@
       (dissoc state :watched-path))
     state))
 
-(defn start-watching [{:keys [source-path target-path watched-path] :as state}]
-  (let [callback #(watch-callback source-path target-path %)
+(defn start-watching [{:keys [source-path source-file
+                              target-path watched-path] :as state}]
+  (let [callback #(watch-callback source-path source-file target-path %)
         new-state (if (not (= watched-path source-path))
                     (stop-watching state)
                     state)]
@@ -100,19 +112,32 @@
   (log/error *logger* (format "Unknown event-type '%s'" event-type))
   state)
 
+(defn get-absolute-path [^java.io.File f]
+  (let [absolute-path (.getAbsolutePath f)]
+    (.substring absolute-path 0 (.lastIndexOf absolute-path File/separator))))
+
 (defn -main [& args]
   (let [parsed-options (cli/parse-opts args option-specs)]
     (when (:help (:options parsed-options))
       (println (:summary parsed-options))
       (System/exit 0))
     (let [arguments (:arguments parsed-options)]
-      (if (> (count arguments) 1)
-        (let [source-path (first arguments) target-path (second arguments)
-              state {:source-path source-path :target-path
-                     (or target-path source-path)
+      (if (> (count arguments) 0)
+        (let [source-arg (first arguments) target-path-arg (second arguments)
+              source-is-file (.isFile (clojure.java.io/file source-arg))
+              source-file (if source-is-file
+                            (clojure.java.io/file source-arg)
+                            nil)
+              source-path (if source-is-file
+                            (get-absolute-path source-file)
+                            source-arg)
+              target-path (if target-path-arg target-path-arg source-path)
+              state {:source-path source-path
+                     :source-file source-file
+                     :target-path target-path
                      :watched-path source-path}]
           (run state)
           (when-not (:disable-watching (:options parsed-options))
             (start-watching state)
             nil))
-        (println "Usage: excel-to-json SOURCEDIR [TARGETDIR]")))))
+        (println "Usage: excel-to-json [SOURCEDIR|SOURCEFILE] [TARGETDIR]")))))
