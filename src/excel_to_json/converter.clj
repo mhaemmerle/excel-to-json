@@ -20,7 +20,7 @@
 (defn convert-value [value]
   (if-let [result (re-find #"^([-+]?[0-9]+)(\.[0-9]+)?$" value)]
     (if (last result)
-      (. Float parseFloat value)
+      (BigDecimal. value)
       (. Integer parseInt value))
     (case (clojure.string/lower-case value)
                   "true" true

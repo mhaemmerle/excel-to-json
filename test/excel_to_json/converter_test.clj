@@ -15,15 +15,15 @@
                      :traits
                      {:1
                       {:property_a "a"
-                       :property_b 9.0
+                       :property_b 9.00M
                        :property_c {:baz "70%" :qux "1100%"}}
                       :2
                       {:property_a "b"
-                       :property_b 8.0
+                       :property_b 8.00M
                        :property_c {:baz "80%" :qux "2200%"}}
                       :3
                       {:property_a "c"
-                       :property_b 7.0
+                       :property_b 7.00M
                        :property_c {:baz "90%" :qux "3300%"}}}
                      :properties
                      [{:prop_a "baz_3" :prop_b 300}
@@ -35,11 +35,11 @@
                      :traits
                      {:1
                       {:property_a "d"
-                       :property_b 6.0
+                       :property_b 6.00M
                        :property_c {:baz "75%" :qux "4400%"}}
                       :2
                       {:property_a "e"
-                       :property_b 5.0
+                       :property_b 5.00M
                        :property_c {:baz "85%" :qux "5500%"}}}
                      :properties
                      [{:prop_a "baz_5" :prop_b 500}
