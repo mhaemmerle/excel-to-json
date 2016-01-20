@@ -96,7 +96,11 @@
         parsed-options (cli/parse-opts args c/option-specs)
         log (atom [])
         [_ source-path target-path] (initialize channel log parsed-options)
-        m {:source-path source-path :target-path target-path :watched-path source-path :ext (:ext (:options parsed-options)) }]
+        m {:source-path source-path
+           :target-path target-path
+           :watched-path source-path
+           :ext (:ext (:options parsed-options))
+           :wrapper (:wrapper (:options parsed-options))}]
     (binding [c/*logger* (StoreLogger. log)]
       (let [initial-state (c/switch-watching! m true)]
         (go
