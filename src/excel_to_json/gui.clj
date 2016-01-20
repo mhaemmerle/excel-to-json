@@ -5,7 +5,8 @@
             [seesaw.bind :as sb]
             [seesaw.chooser :as sch]
             [seesaw.mig :as sm]
-            [excel-to-json.core :as c])
+            [excel-to-json.core :as c]
+            [clojure.tools.cli :as cli])
   (:import java.util.prefs.Preferences [excel_to_json.logger StoreLogger]))
 
 ;; TODO button for applying source -> target
@@ -77,9 +78,10 @@
                    :center (create-log log-model)
                    :south (create-convert-button channel)))
 
-(defn initialize [channel log-model]
-  (let [source-path (get-preference :source-directory)
-        target-path (get-preference :target-directory)
+(defn initialize [channel log-model parsed-options]
+  (let [args (:arguments parsed-options)
+        source-path (or (first args) (get-preference :source-directory))
+        target-path (or (second args) (get-preference :target-directory))
         frame (sc/frame :title "Excel > JSON"
                         :width 1350
                         :height 650
@@ -91,9 +93,10 @@
 
 (defn -main [& args]
   (let [channel (chan)
+        parsed-options (cli/parse-opts args c/option-specs)
         log (atom [])
-        [_ source-path target-path] (initialize channel log)
-        m {:source-path source-path :target-path target-path :watched-path source-path}]
+        [_ source-path target-path] (initialize channel log parsed-options)
+        m {:source-path source-path :target-path target-path :watched-path source-path :ext (:ext (:options parsed-options)) }]
     (binding [c/*logger* (StoreLogger. log)]
       (let [initial-state (c/switch-watching! m true)]
         (go

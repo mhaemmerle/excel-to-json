@@ -21,11 +21,11 @@
 (defn get-filename [^File file]
   (first (clojure.string/split (.getName file) #"\.")))
 
-(defn convert-and-save [^File file target-path]
+(defn convert-and-save [^File file target-path ext]
   (try
     (let [file-path (.getPath file)]
       (doseq [[filename config] (converter/convert file-path)]
-        (let [output-file (str target-path "/" filename ".json")
+        (let [output-file (str target-path "/" filename "." ext)
               json-string (generate-string config {:pretty true})]
           (spit output-file json-string)
           (log/info *logger* (str "Converted " file-path "->" output-file)))))
@@ -33,7 +33,7 @@
       (log/error *logger* (str "Converting" file "failed with: " e "\n"))
       (clojure.pprint/pprint (.getStackTrace e)))))
 
-(defn watch-callback [source-path source-file target-path ^Path file-path]
+(defn watch-callback [source-path source-file target-path ext ^Path file-path]
   (let [f (.getPath ^File (.toFile file-path))
         file (try
                (clojure.java.io/file source-path f)
@@ -46,10 +46,10 @@
       (when (or (nil? source-file)
                 (= a1 a2))
         (log/info *logger* "Updating changed file...")
-        (convert-and-save file target-path)
+        (convert-and-save file target-path ext)
         (log/status *logger* "[done]")))))
 
-(defn run [{:keys [source-path source-file target-path] :as state}]
+(defn run [{:keys [source-path source-file target-path ext] :as state}]
   (log/info *logger* (format "Converting files from '%s' to '%s'"
                              source-path target-path))
   (let [directory (clojure.java.io/file source-path)
@@ -60,7 +60,7 @@
                                  acc)) [] (.listFiles directory))
                      [source-file])]
     (doseq [file xlsx-files]
-      (convert-and-save file target-path))
+      (convert-and-save file target-path ext))
     (log/status *logger* "[done]")
     state))
 
@@ -72,8 +72,8 @@
     state))
 
 (defn start-watching [{:keys [source-path source-file
-                              target-path watched-path] :as state}]
-  (let [callback #(watch-callback source-path source-file target-path %)
+                              target-path watched-path ext] :as state}]
+  (let [callback #(watch-callback source-path source-file target-path ext %)
         new-state (if (not (= watched-path source-path))
                     (stop-watching state)
                     state)]
@@ -83,7 +83,9 @@
 
 (def option-specs
   [[nil "--disable-watching" "Disable watching" :default false :flag true]
-   ["-h" "--help" "Show help" :default false :flag true]])
+   ["-h" "--help" "Show help" :default false :flag true]
+   ["-e" "--ext EXT" "Use ext instead on json" :default "json"]]
+  )
 
 ;; re-run on directory-change
 
@@ -135,7 +137,8 @@
               state {:source-path source-path
                      :source-file source-file
                      :target-path target-path
-                     :watched-path source-path}]
+                     :watched-path source-path
+                     :ext (:ext (:options parsed-options))}]
           (run state)
           (when-not (:disable-watching (:options parsed-options))
             (start-watching state)
