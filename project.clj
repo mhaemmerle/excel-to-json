@@ -10,4 +10,5 @@
                  [seesaw "1.4.4"]
                  [org.clojure/core.match "0.2.1"]]
   :plugins [[lein-marginalia "0.7.1"]]
+  :profiles {:uberjar {:aot :all}}
   :main excel-to-json.core)
