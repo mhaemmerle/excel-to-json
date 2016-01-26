@@ -3,7 +3,6 @@
   (:require [clojure.core.async :refer [go chan <! >! put!]]
             [cheshire.core :refer [generate-string]]
             [fswatch.core :as fs]
-            [clojure.tools.cli :as cli]
             [excel-to-json.converter :as converter]
             [excel-to-json.logger :as log])
   (:import java.io.File [excel_to_json.logger PrintLogger]
@@ -84,13 +83,6 @@
     (log/info *logger* (format "Starting to watch '%s'" source-path))
     (assoc new-state :watched-path source-path)))
 
-(def option-specs
-  [[nil "--disable-watching" "Disable watching" :default false :flag true]
-   ["-h" "--help" "Show help" :default false :flag true]
-   ["-w" "--wrapper WRAPPER" "Wrape list in object" :default nil]
-   ["-e" "--ext EXT" "Use ext instead of json" :default "json"]]
-  )
-
 ;; re-run on directory-change
 
 (defn switch-watching! [state enabled?]
@@ -117,37 +109,3 @@
 (defmethod handle-event :default [state [event-type payload]]
   (log/error *logger* (format "Unknown event-type '%s'" event-type))
   state)
-
-(defn get-absolute-path [^java.io.File f]
-  (let [absolute-path (.getAbsolutePath f)]
-    (.substring absolute-path 0 (.lastIndexOf absolute-path File/separator))))
-
-(defn -main [& args]
-  (let [parsed-options (cli/parse-opts args option-specs)]
-    (when (:help (:options parsed-options))
-      (println (:summary parsed-options))
-      (System/exit 0))
-    (let [arguments (:arguments parsed-options)]
-      (if (> (count arguments) 0)
-        (let [source-arg (first arguments) target-path-arg (second arguments)
-              source-is-file (.isFile (clojure.java.io/file source-arg))
-              source-file (if source-is-file
-                            (clojure.java.io/file source-arg)
-                            nil)
-              source-path (if source-is-file
-                            (get-absolute-path source-file)
-                            source-arg)
-              target-path (if target-path-arg target-path-arg source-path)
-              state {:source-path source-path
-                     :source-file source-file
-                     :target-path target-path
-                     :watched-path source-path
-                     :ext (:ext (:options parsed-options))
-                     :wrapper (:wrapper (:options parsed-options))}]
-          (run state)
-          (when-not (:disable-watching (:options parsed-options))
-            (start-watching state)
-            nil))
-        (do
-          (println "Usage: excel-to-json SOURCE [TARGETDIR]")
-          (println "       SOURCE can be either a directory or a single file."))))))
