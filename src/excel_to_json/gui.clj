@@ -6,7 +6,7 @@
             [seesaw.chooser :as sch]
             [seesaw.mig :as sm]
             [excel-to-json.core :as c]
-            [clojure.tools.cli :as cli])
+            [excel-to-json.cli :as cli])
   (:import java.util.prefs.Preferences [excel_to_json.logger StoreLogger]))
 
 ;; TODO button for applying source -> target
@@ -93,7 +93,7 @@
 
 (defn -main [& args]
   (let [channel (chan)
-        parsed-options (cli/parse-opts args c/option-specs)
+        parsed-options (cli/parse args)
         log (atom [])
         [_ source-path target-path] (initialize channel log parsed-options)
         m {:source-path source-path
