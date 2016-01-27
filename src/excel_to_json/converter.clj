@@ -6,7 +6,7 @@
 
 (def ^:dynamic *evaluator*)
 
-(def data-formatter (DataFormatter.))
+(def data-formatter (DataFormatter. java.util.Locale/US))
 
 (defn split-keys [k]
   (map keyword (clojure.string/split (name k) #"\.")))
