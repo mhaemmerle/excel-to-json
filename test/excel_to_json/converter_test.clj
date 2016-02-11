@@ -26,9 +26,9 @@
                        :property_b 7.00M
                        :property_c {:baz "90%" :qux "3300%"}}}
                      :properties
-                     [{:prop_a "baz_3" :prop_b 300}
+                     [{:prop_a "baz_1" :prop_b 100}
                       {:prop_a "baz_2" :prop_b 200}
-                      {:prop_a "baz_1" :prop_b 100}]}
+                      {:prop_a "baz_3" :prop_b 300}]}
                     {:id "bar"
                      :property_1 900
                      :property_2 false
@@ -42,8 +42,8 @@
                        :property_b 5.00M
                        :property_c {:baz "85%" :qux "5500%"}}}
                      :properties
-                     [{:prop_a "baz_5" :prop_b 500}
-                      {:prop_a "baz_4" :prop_b 400}]}]]]]
+                     [{:prop_a "baz_4" :prop_b 400}
+                      {:prop_a "baz_5" :prop_b 500}]}]]]]
     (is (= expected configs))))
 
 (deftest convert-array
