@@ -8,6 +8,10 @@
 
 (def data-formatter (DataFormatter. java.util.Locale/US))
 
+(defn conj*
+  [s x]
+  (conj (vec s) x))
+
 (defn split-keys [k]
   (map keyword (clojure.string/split (name k) #"\.")))
 
@@ -104,7 +108,7 @@
                           (if (empty? sub)
                             acc
                             (if (blank? nested-key)
-                              (update-in acc [secondary-key] conj sub)
+                              (update-in acc [secondary-key] conj* sub)
                               (assoc-in (ensure-ordered acc secondary-key)
                                         [secondary-key safe-nested-key] sub)))))
                       acc0 secondary-config)))
